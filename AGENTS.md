@@ -85,3 +85,20 @@ npm run db:studio   # Drizzle Studio (visual DB editor)
 | `src/components/postings/posting-form.tsx` | Main posting form with dynamic attributes |
 | `src/components/search/home-content.tsx` | Search page orchestration |
 | `src/middleware.ts` | Auth-based route protection |
+
+
+## Brand
+
+Font: 
+Space Grotesk from Google Fonts
+
+Colors:
+EAEAEA - light grey color
+191919 - text color
+F8FCDA - light yellow
+E3E9C2 - cream
+F9FBB2 - cream
+7C6354 - olive wood
+A5ABAF - cool steel
+
+Use light grey background with dark grey as text color. Use other colors a highlight etc color.
