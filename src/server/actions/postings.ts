@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/server/db";
-import { postings, images } from "@/server/db/schema";
+import { postings, images, postingAttributes } from "@/server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { postingSchema } from "@/lib/validators";
@@ -46,10 +46,23 @@ export async function createPosting(formData: FormData) {
       price: Math.round(price * 100), // Convert to cents
       location,
       categoryId,
-      attributes: JSON.stringify(attributes),
       expiresAt,
     })
     .returning();
+
+  // Insert attribute rows into EAV table
+  const attrEntries = Object.entries(attributes).filter(
+    ([, v]) => v !== undefined && v !== null && v !== ""
+  );
+  if (attrEntries.length > 0) {
+    await db.insert(postingAttributes).values(
+      attrEntries.map(([key, value]) => ({
+        postingId: posting.id,
+        key,
+        value: String(value),
+      }))
+    );
+  }
 
   // Link uploaded images to this posting
   if (imageIds.length > 0) {
@@ -105,10 +118,24 @@ export async function updatePosting(postingId: string, formData: FormData) {
       price: Math.round(price * 100),
       location,
       categoryId,
-      attributes: JSON.stringify(attributes),
       updatedAt: new Date(),
     })
     .where(eq(postings.id, postingId));
+
+  // Update attributes: delete old, insert new
+  await db.delete(postingAttributes).where(eq(postingAttributes.postingId, postingId));
+  const attrEntries = Object.entries(attributes).filter(
+    ([, v]) => v !== undefined && v !== null && v !== ""
+  );
+  if (attrEntries.length > 0) {
+    await db.insert(postingAttributes).values(
+      attrEntries.map(([key, value]) => ({
+        postingId,
+        key,
+        value: String(value),
+      }))
+    );
+  }
 
   // Update image associations
   // First, unlink all images from this posting

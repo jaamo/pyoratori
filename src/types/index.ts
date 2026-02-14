@@ -19,6 +19,7 @@ export type SearchAlert = InferSelectModel<typeof searchAlerts>;
 
 export type PostingWithImages = Posting & {
   images: Image[];
+  attributes: Record<string, string>;
 };
 
 export type PostingWithDetails = PostingWithImages & {

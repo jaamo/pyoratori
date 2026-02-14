@@ -46,7 +46,7 @@ export function PostingDetail({ posting }: PostingDetailProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const isOwner = session?.user?.id === posting.authorId;
-  const attrs = JSON.parse(posting.attributes) as Record<string, unknown>;
+  const attrs = posting.attributes;
   const attrDefs = getAttributesForCategory(posting.categoryId);
 
   async function handleSendMessage() {

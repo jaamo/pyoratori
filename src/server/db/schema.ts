@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Auth.js tables ──────────────────────────────────────────────
@@ -78,7 +78,6 @@ export const postings = sqliteTable("postings", {
   categoryId: text("categoryId")
     .notNull()
     .references(() => categories.id),
-  attributes: text("attributes").notNull().default("{}"), // JSON
   status: text("status").notNull().default("active"),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
@@ -88,6 +87,16 @@ export const postings = sqliteTable("postings", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+export const postingAttributes = sqliteTable("posting_attributes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  postingId: text("posting_id").notNull().references(() => postings.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
+  value: text("value").notNull(),
+}, (table) => [
+  uniqueIndex("posting_attributes_posting_key").on(table.postingId, table.key),
+  index("posting_attributes_key_value").on(table.key, table.value),
+]);
 
 export const images = sqliteTable("images", {
   id: text("id")

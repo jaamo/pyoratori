@@ -34,7 +34,7 @@ export function PostingForm({ posting }: PostingFormProps) {
   const [categoryId, setCategoryId] = useState(posting?.categoryId || "");
   const [attributes, setAttributes] = useState<
     Record<string, string | number | boolean>
-  >(posting ? JSON.parse(posting.attributes) : {});
+  >(posting ? posting.attributes : {});
   const [images, setImages] = useState<UploadedImage[]>(
     posting?.images.map((img) => ({
       id: img.id,

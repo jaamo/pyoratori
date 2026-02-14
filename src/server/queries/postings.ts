@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
-import { postings, images, users, categories } from "@/server/db/schema";
-import { eq, desc, and, like, gte, lte, sql, or } from "drizzle-orm";
+import { postings, images, users, categories, postingAttributes } from "@/server/db/schema";
+import { eq, desc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { POSTING_STATUS, POSTING_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, PostingWithDetails, PostingWithImages } from "@/types";
 
@@ -19,6 +19,24 @@ function checkExpiry<T extends { status: string; expiresAt: Date; id: string }>(
   return posting;
 }
 
+async function getAttributesForPostings(
+  postingIds: string[]
+): Promise<Map<string, Record<string, string>>> {
+  if (postingIds.length === 0) return new Map();
+
+  const rows = await db
+    .select({ postingId: postingAttributes.postingId, key: postingAttributes.key, value: postingAttributes.value })
+    .from(postingAttributes)
+    .where(inArray(postingAttributes.postingId, postingIds));
+
+  const map = new Map<string, Record<string, string>>();
+  for (const row of rows) {
+    if (!map.has(row.postingId)) map.set(row.postingId, {});
+    map.get(row.postingId)![row.key] = row.value;
+  }
+  return map;
+}
+
 export async function getPostingById(
   id: string
 ): Promise<PostingWithDetails | null> {
@@ -30,25 +48,27 @@ export async function getPostingById(
 
   const checked = checkExpiry(posting);
 
-  const postingImages = await db.query.images.findMany({
-    where: eq(images.postingId, id),
-    orderBy: [images.sortOrder],
-  });
-
-  const author = await db.query.users.findFirst({
-    where: eq(users.id, checked.authorId),
-    columns: { id: true, name: true, email: true },
-  });
-
-  const category = await db.query.categories.findFirst({
-    where: eq(categories.id, checked.categoryId),
-  });
+  const [postingImages, attrsMap, author, category] = await Promise.all([
+    db.query.images.findMany({
+      where: eq(images.postingId, id),
+      orderBy: [images.sortOrder],
+    }),
+    getAttributesForPostings([id]),
+    db.query.users.findFirst({
+      where: eq(users.id, checked.authorId),
+      columns: { id: true, name: true, email: true },
+    }),
+    db.query.categories.findFirst({
+      where: eq(categories.id, checked.categoryId),
+    }),
+  ]);
 
   if (!author || !category) return null;
 
   return {
     ...checked,
     images: postingImages,
+    attributes: attrsMap.get(id) || {},
     author,
     category,
   };
@@ -103,12 +123,12 @@ export async function searchPostings(
     conditions.push(like(postings.location, `%${filters.location}%`));
   }
 
-  // Attribute filtering using json_extract
+  // Attribute filtering using EXISTS subqueries on EAV table
   if (filters.attributes) {
     for (const [key, value] of Object.entries(filters.attributes)) {
       if (value !== undefined && value !== "" && value !== null) {
         conditions.push(
-          sql`json_extract(${postings.attributes}, '$.' || ${key}) = ${String(value)}`
+          sql`EXISTS (SELECT 1 FROM posting_attributes WHERE posting_attributes.posting_id = ${postings.id} AND posting_attributes.key = ${key} AND posting_attributes.value = ${String(value)})`
         );
       }
     }
@@ -133,14 +153,17 @@ export async function searchPostings(
 
   const total = countResult[0]?.count || 0;
 
-  // Fetch images for all postings
+  // Fetch images and attributes for all postings
+  const postingIds = results.map((p) => p.id);
+  const attrsMap = await getAttributesForPostings(postingIds);
+
   const postingsWithImages: PostingWithImages[] = await Promise.all(
     results.map(async (p) => {
       const postingImages = await db.query.images.findMany({
         where: eq(images.postingId, p.id),
         orderBy: [images.sortOrder],
       });
-      return { ...p, images: postingImages };
+      return { ...p, images: postingImages, attributes: attrsMap.get(p.id) || {} };
     })
   );
 
@@ -155,6 +178,9 @@ export async function getPostingsByUser(
     orderBy: [desc(postings.createdAt)],
   });
 
+  const postingIds = results.map((p) => p.id);
+  const attrsMap = await getAttributesForPostings(postingIds);
+
   const postingsWithImages: PostingWithImages[] = await Promise.all(
     results.map(async (p) => {
       const checked = checkExpiry(p);
@@ -162,7 +188,7 @@ export async function getPostingsByUser(
         where: eq(images.postingId, p.id),
         orderBy: [images.sortOrder],
       });
-      return { ...checked, images: postingImages };
+      return { ...checked, images: postingImages, attributes: attrsMap.get(p.id) || {} };
     })
   );
 
