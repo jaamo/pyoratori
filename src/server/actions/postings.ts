@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/server/db";
-import { postings, images, postingAttributes } from "@/server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { postings, images, postingAttributes, attributes } from "@/server/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { postingSchema } from "@/lib/validators";
 import { POSTING_EXPIRY_DAYS, POSTING_STATUS } from "@/lib/constants";
@@ -31,7 +31,7 @@ export async function createPosting(formData: FormData) {
     return { error: result.error.issues[0].message };
   }
 
-  const { title, description, price, location, categoryId, attributes, imageIds } =
+  const { title, description, price, location, categoryId, attributes: postingAttrs, imageIds } =
     result.data;
 
   const expiresAt = new Date();
@@ -50,17 +50,26 @@ export async function createPosting(formData: FormData) {
     })
     .returning();
 
-  // Insert attribute rows into EAV table
-  const attrEntries = Object.entries(attributes).filter(
+  // Insert attribute rows — look up attributeId from key
+  const attrEntries = Object.entries(postingAttrs).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""
   );
   if (attrEntries.length > 0) {
+    const attrKeys = attrEntries.map(([key]) => key);
+    const attrRows = await db
+      .select({ id: attributes.id, key: attributes.key })
+      .from(attributes)
+      .where(inArray(attributes.key, attrKeys));
+    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+
     await db.insert(postingAttributes).values(
-      attrEntries.map(([key, value]) => ({
-        postingId: posting.id,
-        key,
-        value: String(value),
-      }))
+      attrEntries
+        .filter(([key]) => keyToId.has(key))
+        .map(([key, value]) => ({
+          postingId: posting.id,
+          attributeId: keyToId.get(key)!,
+          value: String(value),
+        }))
     );
   }
 
@@ -107,7 +116,7 @@ export async function updatePosting(postingId: string, formData: FormData) {
     return { error: result.error.issues[0].message };
   }
 
-  const { title, description, price, location, categoryId, attributes, imageIds } =
+  const { title, description, price, location, categoryId, attributes: postingAttrs, imageIds } =
     result.data;
 
   await db
@@ -122,18 +131,27 @@ export async function updatePosting(postingId: string, formData: FormData) {
     })
     .where(eq(postings.id, postingId));
 
-  // Update attributes: delete old, insert new
+  // Update attributes: delete old, insert new with attributeId lookup
   await db.delete(postingAttributes).where(eq(postingAttributes.postingId, postingId));
-  const attrEntries = Object.entries(attributes).filter(
+  const attrEntries = Object.entries(postingAttrs).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""
   );
   if (attrEntries.length > 0) {
+    const attrKeys = attrEntries.map(([key]) => key);
+    const attrRows = await db
+      .select({ id: attributes.id, key: attributes.key })
+      .from(attributes)
+      .where(inArray(attributes.key, attrKeys));
+    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+
     await db.insert(postingAttributes).values(
-      attrEntries.map(([key, value]) => ({
-        postingId,
-        key,
-        value: String(value),
-      }))
+      attrEntries
+        .filter(([key]) => keyToId.has(key))
+        .map(([key, value]) => ({
+          postingId,
+          attributeId: keyToId.get(key)!,
+          value: String(value),
+        }))
     );
   }
 

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, index, primaryKey } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // ─── Auth.js tables ──────────────────────────────────────────────
@@ -64,6 +64,31 @@ export const categories = sqliteTable("categories", {
   sortOrder: integer("sortOrder").notNull().default(0),
 });
 
+export const attributes = sqliteTable("attributes", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  key: text("key").notNull().unique(),
+  label: text("label").notNull(),
+  type: text("type").notNull(), // "select" | "number" | "text" | "boolean"
+  options: text("options"), // JSON array for select types
+  filterable: integer("filterable", { mode: "boolean" }).notNull().default(false),
+  required: integer("required", { mode: "boolean" }).notNull().default(false),
+  unit: text("unit"),
+});
+
+export const categoryAttributes = sqliteTable("category_attributes", {
+  categoryId: text("categoryId")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
+  attributeId: text("attributeId")
+    .notNull()
+    .references(() => attributes.id, { onDelete: "cascade" }),
+  sortOrder: integer("sortOrder").notNull().default(0),
+}, (table) => [
+  primaryKey({ columns: [table.categoryId, table.attributeId] }),
+]);
+
 export const postings = sqliteTable("postings", {
   id: text("id")
     .primaryKey()
@@ -91,11 +116,11 @@ export const postings = sqliteTable("postings", {
 export const postingAttributes = sqliteTable("posting_attributes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   postingId: text("posting_id").notNull().references(() => postings.id, { onDelete: "cascade" }),
-  key: text("key").notNull(),
+  attributeId: text("attribute_id").notNull().references(() => attributes.id, { onDelete: "cascade" }),
   value: text("value").notNull(),
 }, (table) => [
-  uniqueIndex("posting_attributes_posting_key").on(table.postingId, table.key),
-  index("posting_attributes_key_value").on(table.key, table.value),
+  uniqueIndex("posting_attributes_posting_attr").on(table.postingId, table.attributeId),
+  index("posting_attributes_attr_value").on(table.attributeId, table.value),
 ]);
 
 export const images = sqliteTable("images", {

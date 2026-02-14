@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { postings, images, users, categories, postingAttributes } from "@/server/db/schema";
+import { postings, images, users, categories, postingAttributes, attributes } from "@/server/db/schema";
 import { eq, desc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { POSTING_STATUS, POSTING_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, PostingWithDetails, PostingWithImages } from "@/types";
@@ -25,8 +25,13 @@ async function getAttributesForPostings(
   if (postingIds.length === 0) return new Map();
 
   const rows = await db
-    .select({ postingId: postingAttributes.postingId, key: postingAttributes.key, value: postingAttributes.value })
+    .select({
+      postingId: postingAttributes.postingId,
+      key: attributes.key,
+      value: postingAttributes.value,
+    })
     .from(postingAttributes)
+    .innerJoin(attributes, eq(postingAttributes.attributeId, attributes.id))
     .where(inArray(postingAttributes.postingId, postingIds));
 
   const map = new Map<string, Record<string, string>>();
@@ -123,12 +128,12 @@ export async function searchPostings(
     conditions.push(like(postings.location, `%${filters.location}%`));
   }
 
-  // Attribute filtering using EXISTS subqueries on EAV table
+  // Attribute filtering using EXISTS subqueries joining through attributes table
   if (filters.attributes) {
     for (const [key, value] of Object.entries(filters.attributes)) {
       if (value !== undefined && value !== "" && value !== null) {
         conditions.push(
-          sql`EXISTS (SELECT 1 FROM posting_attributes WHERE posting_attributes.posting_id = ${postings.id} AND posting_attributes.key = ${key} AND posting_attributes.value = ${String(value)})`
+          sql`EXISTS (SELECT 1 FROM posting_attributes INNER JOIN attributes ON posting_attributes.attribute_id = attributes.id WHERE posting_attributes.posting_id = ${postings.id} AND attributes.key = ${key} AND posting_attributes.value = ${String(value)})`
         );
       }
     }

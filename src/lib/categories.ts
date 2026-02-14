@@ -777,6 +777,76 @@ export function getAttributesForCategory(
   return [];
 }
 
+export function getAllAttributes(): Array<{
+  key: string;
+  label: string;
+  type: string;
+  options: string | null;
+  filterable: boolean;
+  required: boolean;
+  unit: string | null;
+}> {
+  const seen = new Map<string, AttributeDefinition>();
+
+  for (const group of categoryGroups) {
+    for (const cat of group.categories) {
+      if (cat.attributes) {
+        for (const attr of cat.attributes) {
+          if (!seen.has(attr.key)) seen.set(attr.key, attr);
+        }
+      }
+      if (cat.children) {
+        for (const child of cat.children) {
+          if (child.attributes) {
+            for (const attr of child.attributes) {
+              if (!seen.has(attr.key)) seen.set(attr.key, attr);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(seen.values()).map((attr) => ({
+    key: attr.key,
+    label: attr.label,
+    type: attr.type,
+    options: attr.options ? JSON.stringify(attr.options) : null,
+    filterable: attr.filterable ?? false,
+    required: attr.required ?? false,
+    unit: attr.unit ?? null,
+  }));
+}
+
+export function getCategoryAttributeMappings(): Array<{
+  categoryId: string;
+  attributeKey: string;
+  sortOrder: number;
+}> {
+  const result: Array<{ categoryId: string; attributeKey: string; sortOrder: number }> = [];
+
+  for (const group of categoryGroups) {
+    for (const cat of group.categories) {
+      if (cat.attributes) {
+        cat.attributes.forEach((attr, i) => {
+          result.push({ categoryId: cat.id, attributeKey: attr.key, sortOrder: i });
+        });
+      }
+      if (cat.children) {
+        for (const child of cat.children) {
+          if (child.attributes) {
+            child.attributes.forEach((attr, i) => {
+              result.push({ categoryId: child.id, attributeKey: attr.key, sortOrder: i });
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function getCategoryById(
   categoryId: string
 ): { id: string; name: string; slug: string; groupId: string } | null {
