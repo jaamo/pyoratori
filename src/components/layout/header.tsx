@@ -21,16 +21,16 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-black/10 bg-black text-white">
       <div className="container mx-auto flex h-14 items-center px-4">
         <Link href="/" className="mr-6 flex items-center">
-          <Image src="/logo.svg" alt="pyoratori.com" width={160} height={22} priority />
+          <Image src="/logo.svg" alt="pyoratori.com" width={160} height={22} priority className="brightness-0 invert" />
         </Link>
 
         <nav className="hidden md:flex md:flex-1 md:items-center md:gap-6">
           <Link
             href="/"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-sm font-medium text-white/70 transition-colors hover:text-white"
           >
             Selaa ilmoituksia
           </Link>
@@ -39,14 +39,14 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
         <div className="flex flex-1 items-center justify-end gap-2">
           {session?.user ? (
             <>
-              <Button asChild variant="default" size="sm" className="hidden md:flex">
+              <Button asChild size="sm" className="hidden md:flex bg-white text-black hover:bg-white/90">
                 <Link href="/ilmoitus/uusi">
                   <Plus className="mr-1 h-4 w-4" />
                   Uusi ilmoitus
                 </Link>
               </Button>
 
-              <Button asChild variant="ghost" size="icon" className="relative">
+              <Button asChild variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white">
                 <Link href="/viestit">
                   <MessageSquare className="h-5 w-5" />
                   {unreadCount > 0 && (
@@ -59,9 +59,9 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-white/20 text-white">
                         {session.user.name
                           ?.split(" ")
                           .map((n) => n[0])
@@ -108,10 +108,10 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
                 <Link href="/kirjaudu">Kirjaudu</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="bg-white text-black hover:bg-white/90">
                 <Link href="/rekisteroidy">Rekisteröidy</Link>
               </Button>
             </>
@@ -120,7 +120,7 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden text-white hover:bg-white/10 hover:text-white"
             onClick={() => setMobileOpen(true)}
           >
             <Menu className="h-5 w-5" />
