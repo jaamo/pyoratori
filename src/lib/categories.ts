@@ -333,11 +333,47 @@ export function getAttributesForCategory(
   return [];
 }
 
+export function getAllAttributeValues(): Array<{
+  attributeKey: string;
+  value: string;
+  sortOrder: number;
+}> {
+  const seen = new Map<string, AttributeDefinition>();
+
+  for (const group of categoryGroups) {
+    for (const cat of group.categories) {
+      if (cat.attributes) {
+        for (const attr of cat.attributes) {
+          if (!seen.has(attr.key)) seen.set(attr.key, attr);
+        }
+      }
+      if (cat.children) {
+        for (const child of cat.children) {
+          if (child.attributes) {
+            for (const attr of child.attributes) {
+              if (!seen.has(attr.key)) seen.set(attr.key, attr);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const result: Array<{ attributeKey: string; value: string; sortOrder: number }> = [];
+  for (const attr of seen.values()) {
+    if (attr.options) {
+      attr.options.forEach((opt, i) => {
+        result.push({ attributeKey: attr.key, value: opt, sortOrder: i });
+      });
+    }
+  }
+  return result;
+}
+
 export function getAllAttributes(): Array<{
   key: string;
   label: string;
   type: string;
-  options: string | null;
   filterable: boolean;
   required: boolean;
   unit: string | null;
@@ -367,7 +403,6 @@ export function getAllAttributes(): Array<{
     key: attr.key,
     label: attr.label,
     type: attr.type,
-    options: attr.options ? JSON.stringify(attr.options) : null,
     filterable: attr.filterable ?? false,
     required: attr.required ?? false,
     unit: attr.unit ?? null,

@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, products, productAttributes, attributes } from "../server/db/schema";
-import { eq } from "drizzle-orm";
+import { users, products, productAttributes, attributes, attributeValues } from "../server/db/schema";
+import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
 
 // ─── Configuration ──────────────────────────────────────────────
@@ -352,11 +352,29 @@ async function insertProduct(
       console.warn(`  Attribute key "${key}" not found in DB, skipping`);
       continue;
     }
-    await db.insert(productAttributes).values({
-      productId: id,
-      attributeId,
-      value,
-    });
+
+    // Look up attribute_value for select-type attributes
+    const avRow = await db
+      .select({ id: attributeValues.id })
+      .from(attributeValues)
+      .where(and(eq(attributeValues.attributeId, attributeId), eq(attributeValues.value, value)))
+      .limit(1);
+
+    if (avRow.length > 0) {
+      await db.insert(productAttributes).values({
+        productId: id,
+        attributeId,
+        attributeValueId: avRow[0].id,
+        value: null,
+      });
+    } else {
+      await db.insert(productAttributes).values({
+        productId: id,
+        attributeId,
+        attributeValueId: null,
+        value,
+      });
+    }
   }
 
   return id;

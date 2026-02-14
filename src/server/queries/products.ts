@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { products, images, users, categories, productAttributes, attributes } from "@/server/db/schema";
+import { products, images, users, categories, productAttributes, attributes, attributeValues } from "@/server/db/schema";
 import { eq, desc, asc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { PRODUCT_STATUS, PRODUCT_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, ProductWithDetails, ProductWithImages } from "@/types";
@@ -28,14 +28,16 @@ async function getAttributesForProducts(
     .select({
       productId: productAttributes.productId,
       key: attributes.key,
-      value: productAttributes.value,
+      value: sql<string>`COALESCE(${attributeValues.value}, ${productAttributes.value})`.as("value"),
     })
     .from(productAttributes)
     .innerJoin(attributes, eq(productAttributes.attributeId, attributes.id))
+    .leftJoin(attributeValues, eq(productAttributes.attributeValueId, attributeValues.id))
     .where(inArray(productAttributes.productId, productIds));
 
   const map = new Map<string, Record<string, string>>();
   for (const row of rows) {
+    if (!row.value) continue;
     if (!map.has(row.productId)) map.set(row.productId, {});
     map.get(row.productId)![row.key] = row.value;
   }
@@ -133,7 +135,7 @@ export async function searchProducts(
     for (const [key, value] of Object.entries(filters.attributes)) {
       if (value !== undefined && value !== "" && value !== null) {
         conditions.push(
-          sql`EXISTS (SELECT 1 FROM product_attributes INNER JOIN attributes ON product_attributes.attribute_id = attributes.id WHERE product_attributes.product_id = ${products.id} AND attributes.key = ${key} AND product_attributes.value = ${String(value)})`
+          sql`EXISTS (SELECT 1 FROM product_attributes INNER JOIN attributes ON product_attributes.attribute_id = attributes.id LEFT JOIN attribute_values ON product_attributes.attribute_value_id = attribute_values.id WHERE product_attributes.product_id = ${products.id} AND attributes.key = ${key} AND COALESCE(attribute_values.value, product_attributes.value) = ${String(value)})`
         );
       }
     }

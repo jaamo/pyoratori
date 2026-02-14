@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/server/db";
-import { products, images, productAttributes, attributes } from "@/server/db/schema";
+import { products, images, productAttributes, attributes, attributeValues } from "@/server/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { productSchema } from "@/lib/validators";
@@ -57,19 +57,42 @@ export async function createProduct(formData: FormData) {
   if (attrEntries.length > 0) {
     const attrKeys = attrEntries.map(([key]) => key);
     const attrRows = await db
-      .select({ id: attributes.id, key: attributes.key })
+      .select({ id: attributes.id, key: attributes.key, type: attributes.type })
       .from(attributes)
       .where(inArray(attributes.key, attrKeys));
-    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+    const keyToAttr = new Map(attrRows.map((a) => [a.key, a]));
+
+    // Fetch attribute values for select-type attributes
+    const selectAttrIds = attrRows.filter((a) => a.type === "select").map((a) => a.id);
+    const attrValueRows = selectAttrIds.length > 0
+      ? await db
+          .select({ id: attributeValues.id, attributeId: attributeValues.attributeId, value: attributeValues.value })
+          .from(attributeValues)
+          .where(inArray(attributeValues.attributeId, selectAttrIds))
+      : [];
+    const attrValueLookup = new Map(attrValueRows.map((av) => [`${av.attributeId}:${av.value}`, av.id]));
 
     await db.insert(productAttributes).values(
       attrEntries
-        .filter(([key]) => keyToId.has(key))
-        .map(([key, value]) => ({
-          productId: product.id,
-          attributeId: keyToId.get(key)!,
-          value: String(value),
-        }))
+        .filter(([key]) => keyToAttr.has(key))
+        .map(([key, value]) => {
+          const attr = keyToAttr.get(key)!;
+          if (attr.type === "select") {
+            const avId = attrValueLookup.get(`${attr.id}:${String(value)}`);
+            return {
+              productId: product.id,
+              attributeId: attr.id,
+              attributeValueId: avId || null,
+              value: null,
+            };
+          }
+          return {
+            productId: product.id,
+            attributeId: attr.id,
+            attributeValueId: null,
+            value: String(value),
+          };
+        })
     );
   }
 
@@ -139,19 +162,42 @@ export async function updateProduct(productId: string, formData: FormData) {
   if (attrEntries.length > 0) {
     const attrKeys = attrEntries.map(([key]) => key);
     const attrRows = await db
-      .select({ id: attributes.id, key: attributes.key })
+      .select({ id: attributes.id, key: attributes.key, type: attributes.type })
       .from(attributes)
       .where(inArray(attributes.key, attrKeys));
-    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+    const keyToAttr = new Map(attrRows.map((a) => [a.key, a]));
+
+    // Fetch attribute values for select-type attributes
+    const selectAttrIds = attrRows.filter((a) => a.type === "select").map((a) => a.id);
+    const attrValueRows = selectAttrIds.length > 0
+      ? await db
+          .select({ id: attributeValues.id, attributeId: attributeValues.attributeId, value: attributeValues.value })
+          .from(attributeValues)
+          .where(inArray(attributeValues.attributeId, selectAttrIds))
+      : [];
+    const attrValueLookup = new Map(attrValueRows.map((av) => [`${av.attributeId}:${av.value}`, av.id]));
 
     await db.insert(productAttributes).values(
       attrEntries
-        .filter(([key]) => keyToId.has(key))
-        .map(([key, value]) => ({
-          productId,
-          attributeId: keyToId.get(key)!,
-          value: String(value),
-        }))
+        .filter(([key]) => keyToAttr.has(key))
+        .map(([key, value]) => {
+          const attr = keyToAttr.get(key)!;
+          if (attr.type === "select") {
+            const avId = attrValueLookup.get(`${attr.id}:${String(value)}`);
+            return {
+              productId,
+              attributeId: attr.id,
+              attributeValueId: avId || null,
+              value: null,
+            };
+          }
+          return {
+            productId,
+            attributeId: attr.id,
+            attributeValueId: null,
+            value: String(value),
+          };
+        })
     );
   }
 
