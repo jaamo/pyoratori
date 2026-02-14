@@ -3,15 +3,9 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getAttributesForCategory, categoryGroups } from "@/lib/categories";
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 
 type FilterPanelProps = {
@@ -21,6 +15,78 @@ type FilterPanelProps = {
   onCategoryChange: (categoryId: string | null) => void;
 };
 
+function CheckboxFilterGroup({
+  label,
+  options,
+  selectedValue,
+  onChange,
+  showSearch = false,
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+  selectedValue: string;
+  onChange: (value: string) => void;
+  showSearch?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredOptions = search
+    ? options.filter((o) =>
+        o.label.toLowerCase().includes(search.toLowerCase())
+      )
+    : options;
+
+  const visibleOptions = expanded
+    ? filteredOptions
+    : filteredOptions.slice(0, 5);
+  const hasMore = filteredOptions.length > 5;
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-semibold">{label}</Label>
+      {showSearch && (
+        <Input
+          className="text-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Kirjoita hakua varten"
+        />
+      )}
+      <div className="space-y-0.5">
+        {visibleOptions.map((opt) => (
+          <label
+            key={opt.value}
+            className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
+          >
+            <Checkbox
+              checked={selectedValue === opt.value}
+              onCheckedChange={(checked) => {
+                onChange(checked ? opt.value : "");
+              }}
+            />
+            <span>{opt.label}</span>
+          </label>
+        ))}
+      </div>
+      {hasMore && !search && (
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 text-sm text-primary hover:underline px-2 py-1"
+        >
+          {expanded ? "Näytä vähemmän" : "Näytä enemmän"}
+          {expanded ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function FilterPanel({
   categoryId,
   filters,
@@ -28,6 +94,7 @@ export function FilterPanel({
   onCategoryChange,
 }: FilterPanelProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [additionalFiltersOpen, setAdditionalFiltersOpen] = useState(false);
 
   const categoryAttributes = categoryId
     ? getAttributesForCategory(categoryId)
@@ -61,60 +128,35 @@ export function FilterPanel({
       {/* Sähköpyörä */}
       <div className="space-y-2">
         <Label className="text-sm font-semibold">Sähköpyörä</Label>
-        <div className="flex flex-col gap-1">
+        <div className="space-y-0.5">
           {["Kyllä", "Ei"].map((opt) => (
-            <button
+            <label
               key={opt}
-              type="button"
-              onClick={() =>
-                handleChange(
-                  "attr_electric",
-                  filters.attr_electric === opt ? "" : opt
-                )
-              }
-              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-                filters.attr_electric === opt
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
             >
-              <span
-                className={`h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center ${
-                  filters.attr_electric === opt
-                    ? "border-primary"
-                    : "border-muted-foreground/40"
-                }`}
-              >
-                {filters.attr_electric === opt && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                )}
-              </span>
+              <Checkbox
+                checked={filters.attr_electric === opt}
+                onCheckedChange={(checked) => {
+                  handleChange("attr_electric", checked ? opt : "");
+                }}
+              />
               {opt}
-            </button>
+            </label>
           ))}
         </div>
       </div>
 
       {/* Kategoria */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Kategoria</Label>
-        <Select
-          value={categoryId || "__all__"}
-          onValueChange={(v) => onCategoryChange(v === "__all__" ? null : v)}
-        >
-          <SelectTrigger className="text-sm">
-            <SelectValue placeholder="Kaikki" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Kaikki</SelectItem>
-            {allCategories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <CheckboxFilterGroup
+        label="Kategoria"
+        options={allCategories.map((cat) => ({
+          value: cat.id,
+          label: cat.name,
+        }))}
+        selectedValue={categoryId || ""}
+        onChange={(value) => onCategoryChange(value || null)}
+        showSearch={allCategories.length > 5}
+      />
 
       {/* Hinta */}
       <div className="space-y-2">
@@ -149,52 +191,59 @@ export function FilterPanel({
         />
       </div>
 
-      {/* Dynamic attribute filters */}
+      {/* Dynamic attribute filters - collapsed by default */}
       {filterableAttributes.length > 0 && (
-        <>
-          <div className="border-t pt-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Tarkemmat suodattimet
-            </p>
-          </div>
-          {filterableAttributes.map((attr) => (
-            <div key={attr.key} className="space-y-2">
-              <Label className="text-sm font-semibold">{attr.label}</Label>
-              {attr.type === "select" && attr.options ? (
-                <Select
-                  value={filters[`attr_${attr.key}`] || "__all__"}
-                  onValueChange={(v) =>
-                    handleChange(
-                      `attr_${attr.key}`,
-                      v === "__all__" ? "" : v
-                    )
-                  }
-                >
-                  <SelectTrigger className="text-sm">
-                    <SelectValue placeholder="Kaikki" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Kaikki</SelectItem>
-                    {attr.options.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  className="text-sm"
-                  type={attr.type === "number" ? "number" : "text"}
-                  value={filters[`attr_${attr.key}`] || ""}
-                  onChange={(e) =>
-                    handleChange(`attr_${attr.key}`, e.target.value)
-                  }
-                />
-              )}
+        <div className="border-t pt-4">
+          <button
+            type="button"
+            onClick={() => setAdditionalFiltersOpen(!additionalFiltersOpen)}
+            className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            <span>Tarkemmat suodattimet</span>
+            {additionalFiltersOpen ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+
+          {additionalFiltersOpen && (
+            <div className="mt-4 space-y-5">
+              {filterableAttributes.map((attr) => (
+                <div key={attr.key}>
+                  {attr.type === "select" && attr.options ? (
+                    <CheckboxFilterGroup
+                      label={attr.label}
+                      options={attr.options.map((opt) => ({
+                        value: opt,
+                        label: opt,
+                      }))}
+                      selectedValue={filters[`attr_${attr.key}`] || ""}
+                      onChange={(value) =>
+                        handleChange(`attr_${attr.key}`, value)
+                      }
+                      showSearch={attr.options.length > 5}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">
+                        {attr.label}
+                      </Label>
+                      <Input
+                        className="text-sm"
+                        type={attr.type === "number" ? "number" : "text"}
+                        value={filters[`attr_${attr.key}`] || ""}
+                        onChange={(e) =>
+                          handleChange(`attr_${attr.key}`, e.target.value)
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </>
+          )}
+        </div>
       )}
 
       {/* Clear all */}

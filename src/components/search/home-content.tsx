@@ -59,7 +59,7 @@ export function HomeContent({
       }
 
       const qs = params.toString();
-      router.push(qs ? `/?${qs}` : "/");
+      router.push(qs ? `/?${qs}` : "/", { scroll: false });
     },
     [
       router,
