@@ -93,12 +93,25 @@ Font:
 Space Grotesk from Google Fonts
 
 Colors:
-EAEAEA - light grey color
-191919 - text color
-F8FCDA - light yellow
-E3E9C2 - cream
-F9FBB2 - cream
-7C6354 - olive wood
-A5ABAF - cool steel
+
+Black
+#000000
+Complete absorption of light radiates unmatched sophistication and strength, symbolizing authority, depth and formality.
+
+Dim Grey
+#66666e
+A powerful shade embodying resilience and understated elegance, suitable for grounded, enduring visual themes.
+
+Cool Steel
+#9999a1
+Cool, steely blue with a hint of mist, conjuring high-tech chic, creative clarity and contemplative moods.
+
+Alabaster Grey
+#e6e6e9
+Pale, misty grey that whispers of modern elegance and refined calm, imparting balance and understated chic.
+
+White Smoke
+#f4f4f6
+Bright, gentle hue radiating purity and clarity, evoking a serene morning mist for tranquil spaces.
 
 Use light grey background with dark grey as text color. Use other colors a highlight etc color.
