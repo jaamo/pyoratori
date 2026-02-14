@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,8 +23,8 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-14 items-center px-4">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <span className="text-xl font-bold">pyoratori.com</span>
+        <Link href="/" className="mr-6 flex items-center">
+          <Image src="/logo.svg" alt="pyoratori.com" width={160} height={22} priority />
         </Link>
 
         <nav className="hidden md:flex md:flex-1 md:items-center md:gap-6">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -6,8 +7,8 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div>
-            <Link href="/" className="text-lg font-bold">
-              pyoratori.com
+            <Link href="/" className="inline-block">
+              <Image src="/logo.svg" alt="pyoratori.com" width={140} height={20} />
             </Link>
             <p className="mt-1 text-sm text-muted-foreground">
               Polkupyörien kirpputori
