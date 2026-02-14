@@ -251,9 +251,9 @@ export const categoryGroups: CategoryGroup[] = [
             ],
           },
           {
-            id: "maasto-full-80-125",
-            name: "Täysjousto 80–125mm",
-            slug: "taysjousto-80-125",
+            id: "maasto-taysjousitettu",
+            name: "Täysjousitettu",
+            slug: "taysjousitettu",
             attributes: [
               ...bikeBaseAttrs,
               {
@@ -261,58 +261,7 @@ export const categoryGroups: CategoryGroup[] = [
                 label: "Takajousto (mm)",
                 type: "number",
                 min: 80,
-                max: 125,
-                unit: "mm",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "maasto-full-130-155",
-            name: "Täysjousto 130–155mm",
-            slug: "taysjousto-130-155",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "rearTravel",
-                label: "Takajousto (mm)",
-                type: "number",
-                min: 130,
-                max: 155,
-                unit: "mm",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "maasto-full-160-185",
-            name: "Täysjousto 160–185mm",
-            slug: "taysjousto-160-185",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "rearTravel",
-                label: "Takajousto (mm)",
-                type: "number",
-                min: 160,
-                max: 185,
-                unit: "mm",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "maasto-full-190-210",
-            name: "Täysjousto 190–210mm",
-            slug: "taysjousto-190-210",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "rearTravel",
-                label: "Takajousto (mm)",
-                type: "number",
-                min: 190,
-                max: 210,
+                max: 250,
                 unit: "mm",
                 filterable: true,
               },
