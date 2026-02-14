@@ -1,7 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import type {
   users,
-  postings,
+  products,
   images,
   categories,
   conversations,
@@ -10,25 +10,25 @@ import type {
 } from "@/server/db/schema";
 
 export type User = InferSelectModel<typeof users>;
-export type Posting = InferSelectModel<typeof postings>;
+export type Product = InferSelectModel<typeof products>;
 export type Image = InferSelectModel<typeof images>;
 export type Category = InferSelectModel<typeof categories>;
 export type Conversation = InferSelectModel<typeof conversations>;
 export type Message = InferSelectModel<typeof messages>;
 export type SearchAlert = InferSelectModel<typeof searchAlerts>;
 
-export type PostingWithImages = Posting & {
+export type ProductWithImages = Product & {
   images: Image[];
   attributes: Record<string, string>;
 };
 
-export type PostingWithDetails = PostingWithImages & {
+export type ProductWithDetails = ProductWithImages & {
   author: Pick<User, "id" | "name" | "email">;
   category: Category;
 };
 
 export type ConversationWithDetails = Conversation & {
-  posting: Pick<Posting, "id" | "title">;
+  product: Pick<Product, "id" | "title">;
   otherUser: Pick<User, "id" | "name">;
   lastMessage: Pick<Message, "content" | "createdAt" | "senderId"> | null;
   unreadCount: number;

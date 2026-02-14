@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { getPostingById } from "@/server/queries/postings";
+import { getProductById } from "@/server/queries/products";
 import {
   Card,
   CardContent,
@@ -8,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PostingForm } from "@/components/postings/posting-form";
+import { ProductForm } from "@/components/products/product-form";
 
-export default async function EditPostingPage({
+export default async function EditProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -21,13 +21,13 @@ export default async function EditPostingPage({
   }
 
   const { id } = await params;
-  const posting = await getPostingById(id);
+  const product = await getProductById(id);
 
-  if (!posting) {
+  if (!product) {
     notFound();
   }
 
-  if (posting.authorId !== session.user.id) {
+  if (product.authorId !== session.user.id) {
     redirect("/");
   }
 
@@ -39,7 +39,7 @@ export default async function EditPostingPage({
           <CardDescription>Päivitä ilmoituksesi tiedot</CardDescription>
         </CardHeader>
         <CardContent>
-          <PostingForm posting={posting} />
+          <ProductForm product={product} />
         </CardContent>
       </Card>
     </div>

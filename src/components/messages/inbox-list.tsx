@@ -41,7 +41,7 @@ export function InboxList({ conversations, currentUserId }: InboxListProps) {
               )}
             </div>
             <p className="truncate text-sm text-muted-foreground">
-              {convo.posting.title}
+              {convo.product.title}
             </p>
             {convo.lastMessage && (
               <p className="mt-0.5 truncate text-sm">

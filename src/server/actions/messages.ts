@@ -1,34 +1,34 @@
 "use server";
 
 import { db } from "@/server/db";
-import { conversations, messages, postings } from "@/server/db/schema";
+import { conversations, messages, products } from "@/server/db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { messageSchema } from "@/lib/validators";
 import { revalidatePath } from "next/cache";
 
-export async function startConversation(postingId: string, content: string) {
+export async function startConversation(productId: string, content: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään" };
   }
 
-  const posting = await db.query.postings.findFirst({
-    where: eq(postings.id, postingId),
+  const product = await db.query.products.findFirst({
+    where: eq(products.id, productId),
   });
 
-  if (!posting) {
+  if (!product) {
     return { error: "Ilmoitusta ei löytynyt" };
   }
 
-  if (posting.authorId === session.user.id) {
+  if (product.authorId === session.user.id) {
     return { error: "Et voi lähettää viestiä omaan ilmoitukseesi" };
   }
 
   // Check for existing conversation
   const existing = await db.query.conversations.findFirst({
     where: and(
-      eq(conversations.postingId, postingId),
+      eq(conversations.productId, productId),
       eq(conversations.buyerId, session.user.id)
     ),
   });
@@ -54,9 +54,9 @@ export async function startConversation(postingId: string, content: string) {
   const [conversation] = await db
     .insert(conversations)
     .values({
-      postingId,
+      productId,
       buyerId: session.user.id,
-      sellerId: posting.authorId,
+      sellerId: product.authorId,
     })
     .returning();
 

@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import {
   conversations,
   messages,
-  postings,
+  products,
   users,
 } from "@/server/db/schema";
 import { eq, and, or, desc, ne, isNull } from "drizzle-orm";
@@ -23,8 +23,8 @@ export async function getInbox(
   const result: ConversationWithDetails[] = [];
 
   for (const convo of convos) {
-    const posting = await db.query.postings.findFirst({
-      where: eq(postings.id, convo.postingId),
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, convo.productId),
       columns: { id: true, title: true },
     });
 
@@ -53,10 +53,10 @@ export async function getInbox(
         )
       );
 
-    if (posting && otherUser) {
+    if (product && otherUser) {
       result.push({
         ...convo,
-        posting,
+        product,
         otherUser,
         lastMessage: lastMessage || null,
         unreadCount: unreadResult[0]?.count || 0,
@@ -84,8 +84,8 @@ export async function getConversation(
     return null;
   }
 
-  const posting = await db.query.postings.findFirst({
-    where: eq(postings.id, convo.postingId),
+  const product = await db.query.products.findFirst({
+    where: eq(products.id, convo.productId),
     columns: { id: true, title: true },
   });
 
@@ -96,7 +96,7 @@ export async function getConversation(
     columns: { id: true, name: true },
   });
 
-  if (!posting || !otherUser) return null;
+  if (!product || !otherUser) return null;
 
   const allMessages = await db.query.messages.findMany({
     where: eq(messages.conversationId, conversationId),
@@ -116,7 +116,7 @@ export async function getConversation(
   return {
     conversation: {
       ...convo,
-      posting,
+      product,
       otherUser,
       lastMessage: null,
       unreadCount: 0,

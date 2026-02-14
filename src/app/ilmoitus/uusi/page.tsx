@@ -5,9 +5,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PostingForm } from "@/components/postings/posting-form";
+import { ProductForm } from "@/components/products/product-form";
 
-export default function NewPostingPage() {
+export default function NewProductPage() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
       <Card>
@@ -18,7 +18,7 @@ export default function NewPostingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PostingForm />
+          <ProductForm />
         </CardContent>
       </Card>
     </div>

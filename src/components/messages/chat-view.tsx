@@ -97,10 +97,10 @@ export function ChatView({
             {conversation.otherUser.name || "Tuntematon"}
           </p>
           <Link
-            href={`/ilmoitus/${conversation.posting.id}`}
+            href={`/ilmoitus/${conversation.product.id}`}
             className="text-sm text-muted-foreground hover:underline"
           >
-            {conversation.posting.title}
+            {conversation.product.title}
           </Link>
         </div>
       </div>

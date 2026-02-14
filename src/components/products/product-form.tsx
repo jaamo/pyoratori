@@ -17,8 +17,8 @@ import {
 import { DynamicAttributes } from "./dynamic-attributes";
 import { ImageUpload } from "./image-upload";
 import { categoryGroups, getAttributesForCategory } from "@/lib/categories";
-import { createPosting, updatePosting } from "@/server/actions/postings";
-import type { PostingWithImages } from "@/types";
+import { createProduct, updateProduct } from "@/server/actions/products";
+import type { ProductWithImages } from "@/types";
 
 type UploadedImage = {
   id: string;
@@ -26,17 +26,17 @@ type UploadedImage = {
   originalName: string;
 };
 
-type PostingFormProps = {
-  posting?: PostingWithImages;
+type ProductFormProps = {
+  product?: ProductWithImages;
 };
 
-export function PostingForm({ posting }: PostingFormProps) {
-  const [categoryId, setCategoryId] = useState(posting?.categoryId || "");
+export function ProductForm({ product }: ProductFormProps) {
+  const [categoryId, setCategoryId] = useState(product?.categoryId || "");
   const [attributes, setAttributes] = useState<
     Record<string, string | number | boolean>
-  >(posting ? posting.attributes : {});
+  >(product ? product.attributes : {});
   const [images, setImages] = useState<UploadedImage[]>(
-    posting?.images.map((img) => ({
+    product?.images.map((img) => ({
       id: img.id,
       filename: img.filename,
       originalName: img.originalName,
@@ -70,9 +70,9 @@ export function PostingForm({ posting }: PostingFormProps) {
     formData.set("imageIds", JSON.stringify(images.map((img) => img.id)));
 
     try {
-      const result = posting
-        ? await updatePosting(posting.id, formData)
-        : await createPosting(formData);
+      const result = product
+        ? await updateProduct(product.id, formData)
+        : await createProduct(formData);
 
       if (result?.error) {
         setError(result.error);
@@ -123,7 +123,7 @@ export function PostingForm({ posting }: PostingFormProps) {
           id="title"
           name="title"
           required
-          defaultValue={posting?.title}
+          defaultValue={product?.title}
           placeholder="Esim. Trek Fuel EX 8 2023"
           maxLength={200}
         />
@@ -173,7 +173,7 @@ export function PostingForm({ posting }: PostingFormProps) {
           id="description"
           name="description"
           required
-          defaultValue={posting?.description}
+          defaultValue={product?.description}
           placeholder="Kerro tuotteesta tarkemmin..."
           rows={6}
           maxLength={5000}
@@ -191,7 +191,7 @@ export function PostingForm({ posting }: PostingFormProps) {
             min="0"
             max="999999"
             required
-            defaultValue={posting ? posting.price / 100 : undefined}
+            defaultValue={product ? product.price / 100 : undefined}
             placeholder="0.00"
           />
         </div>
@@ -202,7 +202,7 @@ export function PostingForm({ posting }: PostingFormProps) {
             id="location"
             name="location"
             required
-            defaultValue={posting?.location}
+            defaultValue={product?.location}
             placeholder="Esim. Helsinki"
           />
         </div>
@@ -210,10 +210,10 @@ export function PostingForm({ posting }: PostingFormProps) {
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading
-          ? posting
+          ? product
             ? "Päivitetään..."
             : "Julkaistaan..."
-          : posting
+          : product
             ? "Päivitä ilmoitus"
             : "Julkaise ilmoitus"}
       </Button>

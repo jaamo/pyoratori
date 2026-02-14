@@ -37,7 +37,7 @@ export const passwordResetSchema = z
     path: ["confirmPassword"],
   });
 
-export const postingSchema = z.object({
+export const productSchema = z.object({
   title: z
     .string()
     .min(3, "Otsikon on oltava vähintään 3 merkkiä")
@@ -77,6 +77,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
-export type PostingInput = z.infer<typeof postingSchema>;
+export type ProductInput = z.infer<typeof productSchema>;
 export type MessageInput = z.infer<typeof messageSchema>;
 export type SearchAlertInput = z.infer<typeof searchAlertSchema>;

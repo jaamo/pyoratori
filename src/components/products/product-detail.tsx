@@ -25,18 +25,18 @@ import {
   MessageSquare,
   CheckCircle,
 } from "lucide-react";
-import { deletePosting, markAsSold } from "@/server/actions/postings";
+import { deleteProduct, markAsSold } from "@/server/actions/products";
 import { startConversation } from "@/server/actions/messages";
 import { getAttributesForCategory } from "@/lib/categories";
-import { POSTING_STATUS } from "@/lib/constants";
-import type { PostingWithDetails } from "@/types";
+import { PRODUCT_STATUS } from "@/lib/constants";
+import type { ProductWithDetails } from "@/types";
 import { useRouter } from "next/navigation";
 
-type PostingDetailProps = {
-  posting: PostingWithDetails;
+type ProductDetailProps = {
+  product: ProductWithDetails;
 };
 
-export function PostingDetail({ posting }: PostingDetailProps) {
+export function ProductDetail({ product }: ProductDetailProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -45,15 +45,15 @@ export function PostingDetail({ posting }: PostingDetailProps) {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const isOwner = session?.user?.id === posting.authorId;
-  const attrs = posting.attributes;
-  const attrDefs = getAttributesForCategory(posting.categoryId);
+  const isOwner = session?.user?.id === product.authorId;
+  const attrs = product.attributes;
+  const attrDefs = getAttributesForCategory(product.categoryId);
 
   async function handleSendMessage() {
     if (!messageContent.trim()) return;
     setMessageSending(true);
 
-    const result = await startConversation(posting.id, messageContent);
+    const result = await startConversation(product.id, messageContent);
     if (result.conversationId) {
       router.push(`/viestit/${result.conversationId}`);
     }
@@ -63,11 +63,11 @@ export function PostingDetail({ posting }: PostingDetailProps) {
   }
 
   async function handleDelete() {
-    await deletePosting(posting.id);
+    await deleteProduct(product.id);
   }
 
   async function handleMarkAsSold() {
-    await markAsSold(posting.id);
+    await markAsSold(product.id);
   }
 
   return (
@@ -76,10 +76,10 @@ export function PostingDetail({ posting }: PostingDetailProps) {
         {/* Images */}
         <div className="space-y-3">
           <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-            {posting.images.length > 0 ? (
+            {product.images.length > 0 ? (
               <Image
-                src={`/api/uploads/${posting.images[selectedImage].filename}`}
-                alt={posting.title}
+                src={`/api/uploads/${product.images[selectedImage].filename}`}
+                alt={product.title}
                 fill
                 className="object-contain"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -92,9 +92,9 @@ export function PostingDetail({ posting }: PostingDetailProps) {
             )}
           </div>
 
-          {posting.images.length > 1 && (
+          {product.images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
-              {posting.images.map((img, i) => (
+              {product.images.map((img, i) => (
                 <button
                   key={img.id}
                   onClick={() => setSelectedImage(i)}
@@ -121,23 +121,23 @@ export function PostingDetail({ posting }: PostingDetailProps) {
         <div className="space-y-4">
           <div>
             <div className="flex items-start justify-between gap-2">
-              <h1 className="text-2xl font-bold">{posting.title}</h1>
-              {posting.status !== POSTING_STATUS.ACTIVE && (
+              <h1 className="text-2xl font-bold">{product.title}</h1>
+              {product.status !== PRODUCT_STATUS.ACTIVE && (
                 <Badge
                   variant={
-                    posting.status === POSTING_STATUS.SOLD
+                    product.status === PRODUCT_STATUS.SOLD
                       ? "destructive"
                       : "secondary"
                   }
                 >
-                  {posting.status === POSTING_STATUS.SOLD
+                  {product.status === PRODUCT_STATUS.SOLD
                     ? "Myyty"
                     : "Vanhentunut"}
                 </Badge>
               )}
             </div>
             <p className="mt-1 text-3xl font-bold">
-              {(posting.price / 100).toLocaleString("fi-FI", {
+              {(product.price / 100).toLocaleString("fi-FI", {
                 style: "currency",
                 currency: "EUR",
               })}
@@ -147,15 +147,15 @@ export function PostingDetail({ posting }: PostingDetailProps) {
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
-              {posting.location}
+              {product.location}
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              {posting.createdAt.toLocaleDateString("fi-FI")}
+              {product.createdAt.toLocaleDateString("fi-FI")}
             </span>
           </div>
 
-          <Badge variant="outline">{posting.category.name}</Badge>
+          <Badge variant="outline">{product.category.name}</Badge>
 
           <Separator />
 
@@ -188,7 +188,7 @@ export function PostingDetail({ posting }: PostingDetailProps) {
           <div>
             <h2 className="mb-2 font-semibold">Kuvaus</h2>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">
-              {posting.description}
+              {product.description}
             </p>
           </div>
 
@@ -198,7 +198,7 @@ export function PostingDetail({ posting }: PostingDetailProps) {
           <div className="text-sm">
             <span className="text-muted-foreground">Myyjä: </span>
             <span className="font-medium">
-              {posting.author.name || "Tuntematon"}
+              {product.author.name || "Tuntematon"}
             </span>
           </div>
 
@@ -207,12 +207,12 @@ export function PostingDetail({ posting }: PostingDetailProps) {
             {isOwner ? (
               <>
                 <Button asChild variant="outline">
-                  <Link href={`/ilmoitus/${posting.id}/muokkaa`}>
+                  <Link href={`/ilmoitus/${product.id}/muokkaa`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Muokkaa
                   </Link>
                 </Button>
-                {posting.status === POSTING_STATUS.ACTIVE && (
+                {product.status === PRODUCT_STATUS.ACTIVE && (
                   <Button variant="outline" onClick={handleMarkAsSold}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Merkitse myydyksi
@@ -266,7 +266,7 @@ export function PostingDetail({ posting }: PostingDetailProps) {
                     <DialogHeader>
                       <DialogTitle>Lähetä viesti</DialogTitle>
                       <DialogDescription>
-                        Viesti koskien ilmoitusta: {posting.title}
+                        Viesti koskien ilmoitusta: {product.title}
                       </DialogDescription>
                     </DialogHeader>
                     <Textarea

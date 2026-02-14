@@ -5,10 +5,10 @@ import { useCallback } from "react";
 import { SearchBar } from "./search-bar";
 import { FilterPanel } from "./filter-panel";
 import { SearchResults } from "./search-results";
-import type { PostingWithImages } from "@/types";
+import type { ProductWithImages } from "@/types";
 
 type HomeContentProps = {
-  initialPostings: PostingWithImages[];
+  initialProducts: ProductWithImages[];
   initialTotal: number;
   initialQuery: string;
   initialCategoryId: string | null;
@@ -18,7 +18,7 @@ type HomeContentProps = {
 };
 
 export function HomeContent({
-  initialPostings,
+  initialProducts,
   initialTotal,
   initialQuery,
   initialCategoryId,
@@ -129,7 +129,7 @@ export function HomeContent({
 
         {/* Main content */}
         <SearchResults
-          postings={initialPostings}
+          products={initialProducts}
           total={initialTotal}
           page={initialPage}
           sort={initialSort}

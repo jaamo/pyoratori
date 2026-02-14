@@ -1,8 +1,8 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, postings, postingAttributes, attributes } from "../server/db/schema";
+import { users, products, productAttributes, attributes } from "../server/db/schema";
 import { eq } from "drizzle-orm";
-import { POSTING_EXPIRY_DAYS } from "../lib/constants";
+import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -314,16 +314,16 @@ async function getAttributeKeyToId(): Promise<Map<string, string>> {
   return new Map(rows.map((r) => [r.key, r.id]));
 }
 
-async function postingExistsByTitle(title: string): Promise<boolean> {
+async function productExistsByTitle(title: string): Promise<boolean> {
   const existing = await db
-    .select({ id: postings.id })
-    .from(postings)
-    .where(eq(postings.title, title))
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.title, title))
     .limit(1);
   return existing.length > 0;
 }
 
-async function insertPosting(
+async function insertProduct(
   listing: ParsedListing,
   authorId: string,
   categoryId: string,
@@ -331,9 +331,9 @@ async function insertPosting(
 ): Promise<string> {
   const id = crypto.randomUUID();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + POSTING_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(now.getTime() + PRODUCT_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-  await db.insert(postings).values({
+  await db.insert(products).values({
     id,
     authorId,
     title: listing.title,
@@ -352,8 +352,8 @@ async function insertPosting(
       console.warn(`  Attribute key "${key}" not found in DB, skipping`);
       continue;
     }
-    await db.insert(postingAttributes).values({
-      postingId: id,
+    await db.insert(productAttributes).values({
+      productId: id,
       attributeId,
       value,
     });
@@ -390,7 +390,7 @@ async function main() {
 
     for (const topic of topics) {
       // Check for duplicate
-      if (await postingExistsByTitle(topic.title)) {
+      if (await productExistsByTitle(topic.title)) {
         console.log(`  SKIP (duplicate): ${topic.title}`);
         totalSkipped++;
         continue;
@@ -420,8 +420,8 @@ async function main() {
 
       // Insert into DB
       try {
-        const postingId = await insertPosting(listing, authorId, categoryId, attrKeyToId);
-        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€) → ${postingId}`);
+        const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
+        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€) → ${productId}`);
         totalImported++;
       } catch (err) {
         console.error(`  FAILED to insert: ${listing.title} - ${err}`);

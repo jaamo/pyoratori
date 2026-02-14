@@ -89,7 +89,7 @@ export const categoryAttributes = sqliteTable("category_attributes", {
   primaryKey({ columns: [table.categoryId, table.attributeId] }),
 ]);
 
-export const postings = sqliteTable("postings", {
+export const products = sqliteTable("products", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -113,21 +113,21 @@ export const postings = sqliteTable("postings", {
     .default(sql`(unixepoch())`),
 });
 
-export const postingAttributes = sqliteTable("posting_attributes", {
+export const productAttributes = sqliteTable("product_attributes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  postingId: text("posting_id").notNull().references(() => postings.id, { onDelete: "cascade" }),
+  productId: text("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   attributeId: text("attribute_id").notNull().references(() => attributes.id, { onDelete: "cascade" }),
   value: text("value").notNull(),
 }, (table) => [
-  uniqueIndex("posting_attributes_posting_attr").on(table.postingId, table.attributeId),
-  index("posting_attributes_attr_value").on(table.attributeId, table.value),
+  uniqueIndex("product_attributes_product_attr").on(table.productId, table.attributeId),
+  index("product_attributes_attr_value").on(table.attributeId, table.value),
 ]);
 
 export const images = sqliteTable("images", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  postingId: text("postingId").references(() => postings.id, {
+  productId: text("productId").references(() => products.id, {
     onDelete: "cascade",
   }),
   filename: text("filename").notNull(),
@@ -146,9 +146,9 @@ export const conversations = sqliteTable("conversations", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  postingId: text("postingId")
+  productId: text("productId")
     .notNull()
-    .references(() => postings.id, { onDelete: "cascade" }),
+    .references(() => products.id, { onDelete: "cascade" }),
   buyerId: text("buyerId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),

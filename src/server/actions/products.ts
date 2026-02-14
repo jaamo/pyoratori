@@ -1,16 +1,16 @@
 "use server";
 
 import { db } from "@/server/db";
-import { postings, images, postingAttributes, attributes } from "@/server/db/schema";
+import { products, images, productAttributes, attributes } from "@/server/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
-import { postingSchema } from "@/lib/validators";
-import { POSTING_EXPIRY_DAYS, POSTING_STATUS } from "@/lib/constants";
+import { productSchema } from "@/lib/validators";
+import { PRODUCT_EXPIRY_DAYS, PRODUCT_STATUS } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deleteImageFiles } from "@/lib/images";
 
-export async function createPosting(formData: FormData) {
+export async function createProduct(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään luodaksesi ilmoituksen" };
@@ -26,19 +26,19 @@ export async function createPosting(formData: FormData) {
     imageIds: JSON.parse((formData.get("imageIds") as string) || "[]"),
   };
 
-  const result = postingSchema.safeParse(raw);
+  const result = productSchema.safeParse(raw);
   if (!result.success) {
     return { error: result.error.issues[0].message };
   }
 
-  const { title, description, price, location, categoryId, attributes: postingAttrs, imageIds } =
+  const { title, description, price, location, categoryId, attributes: productAttrs, imageIds } =
     result.data;
 
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + POSTING_EXPIRY_DAYS);
+  expiresAt.setDate(expiresAt.getDate() + PRODUCT_EXPIRY_DAYS);
 
-  const [posting] = await db
-    .insert(postings)
+  const [product] = await db
+    .insert(products)
     .values({
       authorId: session.user.id,
       title,
@@ -51,7 +51,7 @@ export async function createPosting(formData: FormData) {
     .returning();
 
   // Insert attribute rows — look up attributeId from key
-  const attrEntries = Object.entries(postingAttrs).filter(
+  const attrEntries = Object.entries(productAttrs).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""
   );
   if (attrEntries.length > 0) {
@@ -62,39 +62,39 @@ export async function createPosting(formData: FormData) {
       .where(inArray(attributes.key, attrKeys));
     const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
 
-    await db.insert(postingAttributes).values(
+    await db.insert(productAttributes).values(
       attrEntries
         .filter(([key]) => keyToId.has(key))
         .map(([key, value]) => ({
-          postingId: posting.id,
+          productId: product.id,
           attributeId: keyToId.get(key)!,
           value: String(value),
         }))
     );
   }
 
-  // Link uploaded images to this posting
+  // Link uploaded images to this product
   if (imageIds.length > 0) {
     for (let i = 0; i < imageIds.length; i++) {
       await db
         .update(images)
-        .set({ postingId: posting.id, sortOrder: i })
+        .set({ productId: product.id, sortOrder: i })
         .where(eq(images.id, imageIds[i]));
     }
   }
 
   revalidatePath("/");
-  redirect(`/ilmoitus/${posting.id}`);
+  redirect(`/ilmoitus/${product.id}`);
 }
 
-export async function updatePosting(postingId: string, formData: FormData) {
+export async function updateProduct(productId: string, formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään" };
   }
 
-  const existing = await db.query.postings.findFirst({
-    where: eq(postings.id, postingId),
+  const existing = await db.query.products.findFirst({
+    where: eq(products.id, productId),
   });
 
   if (!existing || existing.authorId !== session.user.id) {
@@ -111,16 +111,16 @@ export async function updatePosting(postingId: string, formData: FormData) {
     imageIds: JSON.parse((formData.get("imageIds") as string) || "[]"),
   };
 
-  const result = postingSchema.safeParse(raw);
+  const result = productSchema.safeParse(raw);
   if (!result.success) {
     return { error: result.error.issues[0].message };
   }
 
-  const { title, description, price, location, categoryId, attributes: postingAttrs, imageIds } =
+  const { title, description, price, location, categoryId, attributes: productAttrs, imageIds } =
     result.data;
 
   await db
-    .update(postings)
+    .update(products)
     .set({
       title,
       description,
@@ -129,11 +129,11 @@ export async function updatePosting(postingId: string, formData: FormData) {
       categoryId,
       updatedAt: new Date(),
     })
-    .where(eq(postings.id, postingId));
+    .where(eq(products.id, productId));
 
   // Update attributes: delete old, insert new with attributeId lookup
-  await db.delete(postingAttributes).where(eq(postingAttributes.postingId, postingId));
-  const attrEntries = Object.entries(postingAttrs).filter(
+  await db.delete(productAttributes).where(eq(productAttributes.productId, productId));
+  const attrEntries = Object.entries(productAttrs).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""
   );
   if (attrEntries.length > 0) {
@@ -144,11 +144,11 @@ export async function updatePosting(postingId: string, formData: FormData) {
       .where(inArray(attributes.key, attrKeys));
     const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
 
-    await db.insert(postingAttributes).values(
+    await db.insert(productAttributes).values(
       attrEntries
         .filter(([key]) => keyToId.has(key))
         .map(([key, value]) => ({
-          postingId,
+          productId,
           attributeId: keyToId.get(key)!,
           value: String(value),
         }))
@@ -156,9 +156,9 @@ export async function updatePosting(postingId: string, formData: FormData) {
   }
 
   // Update image associations
-  // First, unlink all images from this posting
+  // First, unlink all images from this product
   const currentImages = await db.query.images.findMany({
-    where: eq(images.postingId, postingId),
+    where: eq(images.productId, productId),
   });
 
   for (const img of currentImages) {
@@ -173,23 +173,23 @@ export async function updatePosting(postingId: string, formData: FormData) {
   for (let i = 0; i < imageIds.length; i++) {
     await db
       .update(images)
-      .set({ postingId: postingId, sortOrder: i })
+      .set({ productId: productId, sortOrder: i })
       .where(eq(images.id, imageIds[i]));
   }
 
-  revalidatePath(`/ilmoitus/${postingId}`);
+  revalidatePath(`/ilmoitus/${productId}`);
   revalidatePath("/");
-  redirect(`/ilmoitus/${postingId}`);
+  redirect(`/ilmoitus/${productId}`);
 }
 
-export async function deletePosting(postingId: string) {
+export async function deleteProduct(productId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään" };
   }
 
-  const existing = await db.query.postings.findFirst({
-    where: eq(postings.id, postingId),
+  const existing = await db.query.products.findFirst({
+    where: eq(products.id, productId),
   });
 
   if (!existing || existing.authorId !== session.user.id) {
@@ -197,29 +197,29 @@ export async function deletePosting(postingId: string) {
   }
 
   // Delete image files
-  const postingImages = await db.query.images.findMany({
-    where: eq(images.postingId, postingId),
+  const productImages = await db.query.images.findMany({
+    where: eq(images.productId, productId),
   });
-  for (const img of postingImages) {
+  for (const img of productImages) {
     deleteImageFiles(img.filename);
   }
 
-  await db.delete(postings).where(eq(postings.id, postingId));
+  await db.delete(products).where(eq(products.id, productId));
 
   revalidatePath("/");
   redirect("/profiili");
 }
 
-export async function markAsSold(postingId: string) {
+export async function markAsSold(productId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään" };
   }
 
-  const existing = await db.query.postings.findFirst({
+  const existing = await db.query.products.findFirst({
     where: and(
-      eq(postings.id, postingId),
-      eq(postings.authorId, session.user.id)
+      eq(products.id, productId),
+      eq(products.authorId, session.user.id)
     ),
   });
 
@@ -228,25 +228,25 @@ export async function markAsSold(postingId: string) {
   }
 
   await db
-    .update(postings)
-    .set({ status: POSTING_STATUS.SOLD, updatedAt: new Date() })
-    .where(eq(postings.id, postingId));
+    .update(products)
+    .set({ status: PRODUCT_STATUS.SOLD, updatedAt: new Date() })
+    .where(eq(products.id, productId));
 
-  revalidatePath(`/ilmoitus/${postingId}`);
+  revalidatePath(`/ilmoitus/${productId}`);
   revalidatePath("/profiili");
   return { success: true };
 }
 
-export async function reactivatePosting(postingId: string) {
+export async function reactivateProduct(productId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Kirjaudu sisään" };
   }
 
-  const existing = await db.query.postings.findFirst({
+  const existing = await db.query.products.findFirst({
     where: and(
-      eq(postings.id, postingId),
-      eq(postings.authorId, session.user.id)
+      eq(products.id, productId),
+      eq(products.authorId, session.user.id)
     ),
   });
 
@@ -255,18 +255,18 @@ export async function reactivatePosting(postingId: string) {
   }
 
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + POSTING_EXPIRY_DAYS);
+  expiresAt.setDate(expiresAt.getDate() + PRODUCT_EXPIRY_DAYS);
 
   await db
-    .update(postings)
+    .update(products)
     .set({
-      status: POSTING_STATUS.ACTIVE,
+      status: PRODUCT_STATUS.ACTIVE,
       expiresAt,
       updatedAt: new Date(),
     })
-    .where(eq(postings.id, postingId));
+    .where(eq(products.id, productId));
 
-  revalidatePath(`/ilmoitus/${postingId}`);
+  revalidatePath(`/ilmoitus/${productId}`);
   revalidatePath("/profiili");
   return { success: true };
 }

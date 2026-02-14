@@ -1,6 +1,6 @@
 "use client";
 
-import { PostingCard } from "@/components/postings/posting-card";
+import { ProductCard } from "@/components/products/product-card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,11 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PostingWithImages } from "@/types";
+import type { ProductWithImages } from "@/types";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
 type SearchResultsProps = {
-  postings: PostingWithImages[];
+  products: ProductWithImages[];
   total: number;
   page: number;
   sort: string;
@@ -28,7 +28,7 @@ const SORT_OPTIONS = [
 ];
 
 export function SearchResults({
-  postings,
+  products,
   total,
   page,
   sort,
@@ -37,7 +37,7 @@ export function SearchResults({
 }: SearchResultsProps) {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
-  if (postings.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="py-12 text-center">
         <p className="text-lg text-muted-foreground">
@@ -71,8 +71,8 @@ export function SearchResults({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {postings.map((posting) => (
-          <PostingCard key={posting.id} posting={posting} />
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
 

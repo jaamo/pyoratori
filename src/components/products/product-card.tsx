@@ -3,27 +3,27 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
-import type { PostingWithImages } from "@/types";
-import { POSTING_STATUS } from "@/lib/constants";
+import type { ProductWithImages } from "@/types";
+import { PRODUCT_STATUS } from "@/lib/constants";
 
-type PostingCardProps = {
-  posting: PostingWithImages;
+type ProductCardProps = {
+  product: ProductWithImages;
 };
 
-export function PostingCard({ posting }: PostingCardProps) {
-  const thumbnail = posting.images[0];
+export function ProductCard({ product }: ProductCardProps) {
+  const thumbnail = product.images[0];
   const thumbFilename = thumbnail
     ? thumbnail.filename.replace(".webp", "-thumb.webp")
     : null;
 
   return (
-    <Link href={`/ilmoitus/${posting.id}`}>
+    <Link href={`/ilmoitus/${product.id}`}>
       <Card className="group overflow-hidden transition-shadow hover:shadow-md">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {thumbFilename ? (
             <Image
               src={`/api/uploads/${thumbFilename}`}
-              alt={posting.title}
+              alt={product.title}
               fill
               className="object-cover transition-transform group-hover:scale-105"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -33,12 +33,12 @@ export function PostingCard({ posting }: PostingCardProps) {
               Ei kuvaa
             </div>
           )}
-          {posting.status === POSTING_STATUS.SOLD && (
+          {product.status === PRODUCT_STATUS.SOLD && (
             <Badge className="absolute left-2 top-2" variant="destructive">
               Myyty
             </Badge>
           )}
-          {posting.status === POSTING_STATUS.EXPIRED && (
+          {product.status === PRODUCT_STATUS.EXPIRED && (
             <Badge className="absolute left-2 top-2" variant="secondary">
               Vanhentunut
             </Badge>
@@ -46,17 +46,17 @@ export function PostingCard({ posting }: PostingCardProps) {
         </div>
         <CardContent className="p-3">
           <h3 className="line-clamp-2 text-sm font-medium leading-tight">
-            {posting.title}
+            {product.title}
           </h3>
           <p className="mt-1 text-lg font-bold">
-            {(posting.price / 100).toLocaleString("fi-FI", {
+            {(product.price / 100).toLocaleString("fi-FI", {
               style: "currency",
               currency: "EUR",
             })}
           </p>
           <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {posting.location}
+            {product.location}
           </div>
         </CardContent>
       </Card>

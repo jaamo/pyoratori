@@ -1,18 +1,18 @@
 import { notFound } from "next/navigation";
-import { getPostingById } from "@/server/queries/postings";
-import { PostingDetail } from "@/components/postings/posting-detail";
+import { getProductById } from "@/server/queries/products";
+import { ProductDetail } from "@/components/products/product-detail";
 
-export default async function PostingPage({
+export default async function ProductPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const posting = await getPostingById(id);
+  const product = await getProductById(id);
 
-  if (!posting) {
+  if (!product) {
     notFound();
   }
 
-  return <PostingDetail posting={posting} />;
+  return <ProductDetail product={product} />;
 }

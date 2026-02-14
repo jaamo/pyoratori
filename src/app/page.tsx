@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { searchPostings } from "@/server/queries/postings";
+import { searchProducts } from "@/server/queries/products";
 import { HomeContent } from "@/components/search/home-content";
 
 export default async function HomePage({
@@ -34,7 +34,7 @@ export default async function HomePage({
     }
   }
 
-  const { postings, total } = await searchPostings({
+  const { products, total } = await searchProducts({
     query,
     categoryId,
     page,
@@ -49,7 +49,7 @@ export default async function HomePage({
     <div className="container mx-auto px-4 py-6">
       <Suspense>
         <HomeContent
-          initialPostings={postings}
+          initialProducts={products}
           initialTotal={total}
           initialQuery={query || ""}
           initialCategoryId={categoryId || null}

@@ -1,27 +1,27 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PostingCard } from "./posting-card";
+import { ProductCard } from "./product-card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { POSTING_STATUS } from "@/lib/constants";
-import type { PostingWithImages } from "@/types";
+import { PRODUCT_STATUS } from "@/lib/constants";
+import type { ProductWithImages } from "@/types";
 
 type ProfileContentProps = {
-  postings: PostingWithImages[];
+  products: ProductWithImages[];
 };
 
-export function ProfileContent({ postings }: ProfileContentProps) {
-  const active = postings.filter((p) => p.status === POSTING_STATUS.ACTIVE);
-  const sold = postings.filter((p) => p.status === POSTING_STATUS.SOLD);
-  const expired = postings.filter((p) => p.status === POSTING_STATUS.EXPIRED);
+export function ProfileContent({ products }: ProfileContentProps) {
+  const active = products.filter((p) => p.status === PRODUCT_STATUS.ACTIVE);
+  const sold = products.filter((p) => p.status === PRODUCT_STATUS.SOLD);
+  const expired = products.filter((p) => p.status === PRODUCT_STATUS.EXPIRED);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">
-          Yhteensä {postings.length} ilmoitusta
+          Yhteensä {products.length} ilmoitusta
         </p>
         <Button asChild>
           <Link href="/ilmoitus/uusi">
@@ -49,8 +49,8 @@ export function ProfileContent({ postings }: ProfileContentProps) {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {active.map((posting) => (
-                <PostingCard key={posting.id} posting={posting} />
+              {active.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
@@ -63,8 +63,8 @@ export function ProfileContent({ postings }: ProfileContentProps) {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {sold.map((posting) => (
-                <PostingCard key={posting.id} posting={posting} />
+              {sold.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
@@ -77,8 +77,8 @@ export function ProfileContent({ postings }: ProfileContentProps) {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {expired.map((posting) => (
-                <PostingCard key={posting.id} posting={posting} />
+              {expired.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
