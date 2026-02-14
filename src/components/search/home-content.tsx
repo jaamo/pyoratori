@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { CategoryPills } from "./category-pills";
 import { SearchBar } from "./search-bar";
 import { FilterPanel } from "./filter-panel";
 import { SearchResults } from "./search-results";
@@ -14,6 +13,7 @@ type HomeContentProps = {
   initialQuery: string;
   initialCategoryId: string | null;
   initialPage: number;
+  initialSort: string;
   initialFilters: Record<string, string>;
 };
 
@@ -23,6 +23,7 @@ export function HomeContent({
   initialQuery,
   initialCategoryId,
   initialPage,
+  initialSort,
   initialFilters,
 }: HomeContentProps) {
   const router = useRouter();
@@ -36,6 +37,8 @@ export function HomeContent({
       if (initialQuery) current.q = initialQuery;
       if (initialCategoryId) current.kategoria = initialCategoryId;
       if (initialPage > 1) current.sivu = String(initialPage);
+      if (initialSort && initialSort !== "newest")
+        current.jarjestys = initialSort;
       for (const [k, v] of Object.entries(initialFilters)) {
         if (k === "minPrice") current.minHinta = v;
         else if (k === "maxPrice") current.maxHinta = v;
@@ -58,7 +61,14 @@ export function HomeContent({
       const qs = params.toString();
       router.push(qs ? `/?${qs}` : "/");
     },
-    [router, initialQuery, initialCategoryId, initialPage, initialFilters]
+    [
+      router,
+      initialQuery,
+      initialCategoryId,
+      initialPage,
+      initialSort,
+      initialFilters,
+    ]
   );
 
   function handleSearch(query: string) {
@@ -91,6 +101,12 @@ export function HomeContent({
     updateUrl(updates);
   }
 
+  function handleSortChange(sort: string) {
+    updateUrl({
+      jarjestys: sort === "newest" ? null : sort,
+    });
+  }
+
   function handlePageChange(page: number) {
     updateUrl({ sivu: page > 1 ? String(page) : null });
   }
@@ -102,24 +118,25 @@ export function HomeContent({
         <SearchBar defaultValue={initialQuery} onSearch={handleSearch} />
       </div>
 
-      <CategoryPills
-        selectedCategoryId={initialCategoryId}
-        onSelect={handleCategorySelect}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+        {/* Sidebar */}
+        <FilterPanel
+          categoryId={initialCategoryId}
+          filters={initialFilters}
+          onFilterChange={handleFilterChange}
+          onCategoryChange={handleCategorySelect}
+        />
 
-      <FilterPanel
-        categoryId={initialCategoryId}
-        filters={initialFilters}
-        onFilterChange={handleFilterChange}
-        onCategoryChange={handleCategorySelect}
-      />
-
-      <SearchResults
-        postings={initialPostings}
-        total={initialTotal}
-        page={initialPage}
-        onPageChange={handlePageChange}
-      />
+        {/* Main content */}
+        <SearchResults
+          postings={initialPostings}
+          total={initialTotal}
+          page={initialPage}
+          sort={initialSort}
+          onPageChange={handlePageChange}
+          onSortChange={handleSortChange}
+        />
+      </div>
     </div>
   );
 }

@@ -74,4 +74,5 @@ export type SearchFilters = {
   location?: string;
   attributes?: Record<string, string | number | boolean>;
   page?: number;
+  sort?: string;
 };

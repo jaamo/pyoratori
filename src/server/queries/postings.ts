@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { postings, images, users, categories, postingAttributes, attributes } from "@/server/db/schema";
-import { eq, desc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { POSTING_STATUS, POSTING_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, PostingWithDetails, PostingWithImages } from "@/types";
 
@@ -143,11 +143,23 @@ export async function searchPostings(
   const page = filters.page || 1;
   const offset = (page - 1) * ITEMS_PER_PAGE;
 
+  let orderByClause;
+  switch (filters.sort) {
+    case "price_asc":
+      orderByClause = asc(postings.price);
+      break;
+    case "price_desc":
+      orderByClause = desc(postings.price);
+      break;
+    default:
+      orderByClause = desc(postings.createdAt);
+  }
+
   const results = await db
     .select()
     .from(postings)
     .where(where)
-    .orderBy(desc(postings.createdAt))
+    .orderBy(orderByClause)
     .limit(ITEMS_PER_PAGE)
     .offset(offset);
 

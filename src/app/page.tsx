@@ -23,6 +23,8 @@ export default async function HomePage({
       : undefined;
   const location =
     typeof params.sijainti === "string" ? params.sijainti : undefined;
+  const sort =
+    typeof params.jarjestys === "string" ? params.jarjestys : undefined;
 
   // Extract attribute filters (prefixed with attr_)
   const attributes: Record<string, string> = {};
@@ -39,6 +41,7 @@ export default async function HomePage({
     minPrice,
     maxPrice,
     location,
+    sort,
     attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
   });
 
@@ -51,6 +54,7 @@ export default async function HomePage({
           initialQuery={query || ""}
           initialCategoryId={categoryId || null}
           initialPage={page}
+          initialSort={sort || "newest"}
           initialFilters={{
             ...(minPrice !== undefined ? { minPrice: String(minPrice) } : {}),
             ...(maxPrice !== undefined ? { maxPrice: String(maxPrice) } : {}),
