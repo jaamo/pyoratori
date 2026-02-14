@@ -125,25 +125,31 @@ export function FilterPanel({
 
   const sidebarContent = (
     <div className="space-y-5">
-      {/* Sähköpyörä */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Sähköpyörä</Label>
-        <div className="space-y-0.5">
-          {["Kyllä", "Ei"].map((opt) => (
-            <label
-              key={opt}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
+      {/* Sähköpyörä / Luomupyörä toggle pills */}
+      <div className="flex gap-2">
+        {(["Luomupyörä", "Sähköpyörä"] as const).map((pill) => {
+          const isElectric = pill === "Sähköpyörä";
+          const electricValue = filters.attr_electric;
+          const isActive = isElectric
+            ? electricValue === "Kyllä"
+            : electricValue !== "Kyllä";
+          return (
+            <button
+              key={pill}
+              type="button"
+              onClick={() =>
+                handleChange("attr_electric", isElectric ? "Kyllä" : "")
+              }
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
             >
-              <Checkbox
-                checked={filters.attr_electric === opt}
-                onCheckedChange={(checked) => {
-                  handleChange("attr_electric", checked ? opt : "");
-                }}
-              />
-              {opt}
-            </label>
-          ))}
-        </div>
+              {pill}
+            </button>
+          );
+        })}
       </div>
 
       {/* Kategoria */}
