@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/server/db";
-import { postings, images, postingAttributes, attributes } from "@/server/db/schema";
+import { postings, images, postingAttributes, attributes, attributeValues } from "@/server/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { postingSchema } from "@/lib/validators";
@@ -57,19 +57,42 @@ export async function createPosting(formData: FormData) {
   if (attrEntries.length > 0) {
     const attrKeys = attrEntries.map(([key]) => key);
     const attrRows = await db
-      .select({ id: attributes.id, key: attributes.key })
+      .select({ id: attributes.id, key: attributes.key, type: attributes.type })
       .from(attributes)
       .where(inArray(attributes.key, attrKeys));
-    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+    const keyToAttr = new Map(attrRows.map((a) => [a.key, a]));
+
+    // Fetch attribute values for select-type attributes
+    const selectAttrIds = attrRows.filter((a) => a.type === "select").map((a) => a.id);
+    const attrValueRows = selectAttrIds.length > 0
+      ? await db
+          .select({ id: attributeValues.id, attributeId: attributeValues.attributeId, value: attributeValues.value })
+          .from(attributeValues)
+          .where(inArray(attributeValues.attributeId, selectAttrIds))
+      : [];
+    const attrValueLookup = new Map(attrValueRows.map((av) => [`${av.attributeId}:${av.value}`, av.id]));
 
     await db.insert(postingAttributes).values(
       attrEntries
-        .filter(([key]) => keyToId.has(key))
-        .map(([key, value]) => ({
-          postingId: posting.id,
-          attributeId: keyToId.get(key)!,
-          value: String(value),
-        }))
+        .filter(([key]) => keyToAttr.has(key))
+        .map(([key, value]) => {
+          const attr = keyToAttr.get(key)!;
+          if (attr.type === "select") {
+            const avId = attrValueLookup.get(`${attr.id}:${String(value)}`);
+            return {
+              postingId: posting.id,
+              attributeId: attr.id,
+              attributeValueId: avId || null,
+              value: null,
+            };
+          }
+          return {
+            postingId: posting.id,
+            attributeId: attr.id,
+            attributeValueId: null,
+            value: String(value),
+          };
+        })
     );
   }
 
@@ -139,19 +162,42 @@ export async function updatePosting(postingId: string, formData: FormData) {
   if (attrEntries.length > 0) {
     const attrKeys = attrEntries.map(([key]) => key);
     const attrRows = await db
-      .select({ id: attributes.id, key: attributes.key })
+      .select({ id: attributes.id, key: attributes.key, type: attributes.type })
       .from(attributes)
       .where(inArray(attributes.key, attrKeys));
-    const keyToId = new Map(attrRows.map((a) => [a.key, a.id]));
+    const keyToAttr = new Map(attrRows.map((a) => [a.key, a]));
+
+    // Fetch attribute values for select-type attributes
+    const selectAttrIds = attrRows.filter((a) => a.type === "select").map((a) => a.id);
+    const attrValueRows = selectAttrIds.length > 0
+      ? await db
+          .select({ id: attributeValues.id, attributeId: attributeValues.attributeId, value: attributeValues.value })
+          .from(attributeValues)
+          .where(inArray(attributeValues.attributeId, selectAttrIds))
+      : [];
+    const attrValueLookup = new Map(attrValueRows.map((av) => [`${av.attributeId}:${av.value}`, av.id]));
 
     await db.insert(postingAttributes).values(
       attrEntries
-        .filter(([key]) => keyToId.has(key))
-        .map(([key, value]) => ({
-          postingId,
-          attributeId: keyToId.get(key)!,
-          value: String(value),
-        }))
+        .filter(([key]) => keyToAttr.has(key))
+        .map(([key, value]) => {
+          const attr = keyToAttr.get(key)!;
+          if (attr.type === "select") {
+            const avId = attrValueLookup.get(`${attr.id}:${String(value)}`);
+            return {
+              postingId,
+              attributeId: attr.id,
+              attributeValueId: avId || null,
+              value: null,
+            };
+          }
+          return {
+            postingId,
+            attributeId: attr.id,
+            attributeValueId: null,
+            value: String(value),
+          };
+        })
     );
   }
 

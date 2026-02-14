@@ -71,11 +71,23 @@ export const attributes = sqliteTable("attributes", {
   key: text("key").notNull().unique(),
   label: text("label").notNull(),
   type: text("type").notNull(), // "select" | "number" | "text" | "boolean"
-  options: text("options"), // JSON array for select types
   filterable: integer("filterable", { mode: "boolean" }).notNull().default(false),
   required: integer("required", { mode: "boolean" }).notNull().default(false),
   unit: text("unit"),
 });
+
+export const attributeValues = sqliteTable("attribute_values", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  attributeId: text("attributeId")
+    .notNull()
+    .references(() => attributes.id, { onDelete: "cascade" }),
+  value: text("value").notNull(),
+  sortOrder: integer("sortOrder").notNull().default(0),
+}, (table) => [
+  uniqueIndex("attribute_values_attr_value").on(table.attributeId, table.value),
+]);
 
 export const categoryAttributes = sqliteTable("category_attributes", {
   categoryId: text("categoryId")
@@ -117,10 +129,12 @@ export const postingAttributes = sqliteTable("posting_attributes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   postingId: text("posting_id").notNull().references(() => postings.id, { onDelete: "cascade" }),
   attributeId: text("attribute_id").notNull().references(() => attributes.id, { onDelete: "cascade" }),
-  value: text("value").notNull(),
+  attributeValueId: text("attribute_value_id").references(() => attributeValues.id),
+  value: text("value"),
 }, (table) => [
   uniqueIndex("posting_attributes_posting_attr").on(table.postingId, table.attributeId),
   index("posting_attributes_attr_value").on(table.attributeId, table.value),
+  index("posting_attributes_attr_value_id").on(table.attributeValueId),
 ]);
 
 export const images = sqliteTable("images", {

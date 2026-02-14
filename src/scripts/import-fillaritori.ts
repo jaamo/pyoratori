@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, postings, postingAttributes, attributes } from "../server/db/schema";
-import { eq } from "drizzle-orm";
+import { users, postings, postingAttributes, attributes, attributeValues } from "../server/db/schema";
+import { eq, and } from "drizzle-orm";
 import { POSTING_EXPIRY_DAYS } from "../lib/constants";
 
 // ─── Configuration ──────────────────────────────────────────────
@@ -352,11 +352,29 @@ async function insertPosting(
       console.warn(`  Attribute key "${key}" not found in DB, skipping`);
       continue;
     }
-    await db.insert(postingAttributes).values({
-      postingId: id,
-      attributeId,
-      value,
-    });
+
+    // Look up attribute_value for select-type attributes
+    const avRow = await db
+      .select({ id: attributeValues.id })
+      .from(attributeValues)
+      .where(and(eq(attributeValues.attributeId, attributeId), eq(attributeValues.value, value)))
+      .limit(1);
+
+    if (avRow.length > 0) {
+      await db.insert(postingAttributes).values({
+        postingId: id,
+        attributeId,
+        attributeValueId: avRow[0].id,
+        value: null,
+      });
+    } else {
+      await db.insert(postingAttributes).values({
+        postingId: id,
+        attributeId,
+        attributeValueId: null,
+        value,
+      });
+    }
   }
 
   return id;

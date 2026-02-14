@@ -1,6 +1,6 @@
 import { db } from "./index";
-import { categories, attributes, categoryAttributes } from "./schema";
-import { getAllCategories, getAllAttributes, getCategoryAttributeMappings } from "@/lib/categories";
+import { categories, attributes, categoryAttributes, attributeValues } from "./schema";
+import { getAllCategories, getAllAttributes, getAllAttributeValues, getCategoryAttributeMappings } from "@/lib/categories";
 
 
 async function seed() {
@@ -40,7 +40,6 @@ async function seed() {
         set: {
           label: attr.label,
           type: attr.type,
-          options: attr.options,
           filterable: attr.filterable,
           required: attr.required,
           unit: attr.unit,
@@ -53,6 +52,37 @@ async function seed() {
   // Build key→id lookup from DB
   const dbAttributes = await db.select({ id: attributes.id, key: attributes.key }).from(attributes);
   const keyToId = new Map(dbAttributes.map((a) => [a.key, a.id]));
+
+  // Seed attribute_values
+  console.log("Seeding attribute_values...");
+
+  const allAttrValues = getAllAttributeValues();
+  let attrValCount = 0;
+
+  for (const av of allAttrValues) {
+    const attributeId = keyToId.get(av.attributeKey);
+    if (!attributeId) {
+      console.warn(`Attribute key "${av.attributeKey}" not found in DB, skipping attribute value.`);
+      continue;
+    }
+
+    await db
+      .insert(attributeValues)
+      .values({
+        attributeId,
+        value: av.value,
+        sortOrder: av.sortOrder,
+      })
+      .onConflictDoUpdate({
+        target: [attributeValues.attributeId, attributeValues.value],
+        set: {
+          sortOrder: av.sortOrder,
+        },
+      });
+    attrValCount++;
+  }
+
+  console.log(`Seeded ${attrValCount} attribute values.`);
 
   // Seed category_attributes
   console.log("Seeding category_attributes...");

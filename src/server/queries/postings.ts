@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { postings, images, users, categories, postingAttributes, attributes } from "@/server/db/schema";
+import { postings, images, users, categories, postingAttributes, attributes, attributeValues } from "@/server/db/schema";
 import { eq, desc, asc, and, like, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { POSTING_STATUS, POSTING_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, PostingWithDetails, PostingWithImages } from "@/types";
@@ -28,14 +28,16 @@ async function getAttributesForPostings(
     .select({
       postingId: postingAttributes.postingId,
       key: attributes.key,
-      value: postingAttributes.value,
+      value: sql<string>`COALESCE(${attributeValues.value}, ${postingAttributes.value})`.as("value"),
     })
     .from(postingAttributes)
     .innerJoin(attributes, eq(postingAttributes.attributeId, attributes.id))
+    .leftJoin(attributeValues, eq(postingAttributes.attributeValueId, attributeValues.id))
     .where(inArray(postingAttributes.postingId, postingIds));
 
   const map = new Map<string, Record<string, string>>();
   for (const row of rows) {
+    if (!row.value) continue;
     if (!map.has(row.postingId)) map.set(row.postingId, {});
     map.get(row.postingId)![row.key] = row.value;
   }
@@ -128,12 +130,12 @@ export async function searchPostings(
     conditions.push(like(postings.location, `%${filters.location}%`));
   }
 
-  // Attribute filtering using EXISTS subqueries joining through attributes table
+  // Attribute filtering using EXISTS subqueries joining through attributes and attribute_values
   if (filters.attributes) {
     for (const [key, value] of Object.entries(filters.attributes)) {
       if (value !== undefined && value !== "" && value !== null) {
         conditions.push(
-          sql`EXISTS (SELECT 1 FROM posting_attributes INNER JOIN attributes ON posting_attributes.attribute_id = attributes.id WHERE posting_attributes.posting_id = ${postings.id} AND attributes.key = ${key} AND posting_attributes.value = ${String(value)})`
+          sql`EXISTS (SELECT 1 FROM posting_attributes INNER JOIN attributes ON posting_attributes.attribute_id = attributes.id LEFT JOIN attribute_values ON posting_attributes.attribute_value_id = attribute_values.id WHERE posting_attributes.posting_id = ${postings.id} AND attributes.key = ${key} AND COALESCE(attribute_values.value, posting_attributes.value) = ${String(value)})`
         );
       }
     }
