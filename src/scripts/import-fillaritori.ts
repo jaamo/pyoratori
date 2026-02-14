@@ -10,7 +10,7 @@ const IMPORTER_EMAIL = "importer@fillaritori.com";
 const IMPORTER_NAME = "Fillaritori Import";
 
 const CATEGORY_URLS: Array<{ url: string; categoryId: string }> = [
-  { url: "https://www.fillaritori.com/forum/54-maantie/", categoryId: "tasamaa-maantie" },
+  { url: "https://www.fillaritori.com/forum/54-maantie/", categoryId: "maantie" },
 ];
 
 const FETCH_DELAY_MS = 1000; // be polite to the server
