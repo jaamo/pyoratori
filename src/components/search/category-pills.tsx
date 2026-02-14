@@ -23,34 +23,19 @@ export function CategoryPills({
         >
           Kaikki
         </Badge>
-        {categoryGroups.map((group) => (
-          <Badge
-            key={group.id}
-            variant={selectedCategoryId === group.id ? "default" : "outline"}
-            className="cursor-pointer"
-            onClick={() =>
-              onSelect(selectedCategoryId === group.id ? null : group.id)
-            }
-          >
-            {group.name}
-          </Badge>
-        ))}
-        {categoryGroups.map((group) =>
-          group.categories.map((cat) => {
-            if (!cat.children) return null;
-            return (
-              <Badge
-                key={cat.id}
-                variant={selectedCategoryId === cat.id ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() =>
-                  onSelect(selectedCategoryId === cat.id ? null : cat.id)
-                }
-              >
-                {cat.name}
-              </Badge>
-            );
-          })
+        {categoryGroups.flatMap((group) =>
+          group.categories.map((cat) => (
+            <Badge
+              key={cat.id}
+              variant={selectedCategoryId === cat.id ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() =>
+                onSelect(selectedCategoryId === cat.id ? null : cat.id)
+              }
+            >
+              {cat.name}
+            </Badge>
+          ))
         )}
       </div>
       <ScrollBar orientation="horizontal" />

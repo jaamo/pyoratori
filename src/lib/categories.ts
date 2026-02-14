@@ -10,14 +10,6 @@ const frameSizeAttr: AttributeDefinition = {
   filterable: true,
 };
 
-const wheelSizeAttr: AttributeDefinition = {
-  key: "wheelSize",
-  label: "Rengaskoko",
-  type: "select",
-  options: ['26"', '27.5"', '29"', '650b', '700c', '20"', '24"', '16"'],
-  filterable: true,
-};
-
 const conditionAttr: AttributeDefinition = {
   key: "condition",
   label: "Kunto",
@@ -27,41 +19,22 @@ const conditionAttr: AttributeDefinition = {
   required: true,
 };
 
-const yearAttr: AttributeDefinition = {
-  key: "year",
-  label: "Vuosimalli",
-  type: "number",
-  min: 1970,
-  max: new Date().getFullYear() + 1,
+const electricAttr: AttributeDefinition = {
+  key: "electric",
+  label: "Sähköpyörä",
+  type: "select",
+  options: ["Kyllä", "Ei"],
   filterable: true,
 };
 
-const brandAttr: AttributeDefinition = {
-  key: "brand",
+const bikeBrandAttr: AttributeDefinition = {
+  key: "bikeBrand",
   label: "Merkki",
-  type: "text",
-  filterable: true,
-};
-
-const modelAttr: AttributeDefinition = {
-  key: "model",
-  label: "Malli",
-  type: "text",
-};
-
-const materialAttr: AttributeDefinition = {
-  key: "material",
-  label: "Materiaali",
   type: "select",
-  options: ["Alumiini", "Hiili (Carbon)", "Teräs", "Titaani", "Muu"],
-  filterable: true,
-};
-
-const genderAttr: AttributeDefinition = {
-  key: "gender",
-  label: "Sukupuoli",
-  type: "select",
-  options: ["Unisex", "Miesten", "Naisten"],
+  options: [
+    "Bianchi", "BMC", "Cannondale", "FOCUS", "Giant", "Lapierre", "Liv",
+    "Orbea", "SCOTT", "Simplon", "Specialized", "Trek", "Wilier", "Muu",
+  ],
   filterable: true,
 };
 
@@ -76,17 +49,6 @@ const gearsAttr: AttributeDefinition = {
     "2x8", "2x9", "2x10", "2x11", "2x12",
     "3x8", "3x9", "3x10", "3x11", "3x12",
     "Muu",
-  ],
-  filterable: true,
-};
-
-const bikeBrandAttr: AttributeDefinition = {
-  key: "bikeBrand",
-  label: "Merkki",
-  type: "select",
-  options: [
-    "Bianchi", "BMC", "Cannondale", "FOCUS", "Giant", "Lapierre", "Liv",
-    "Orbea", "SCOTT", "Simplon", "Specialized", "Trek", "Wilier", "Muu",
   ],
   filterable: true,
 };
@@ -111,7 +73,7 @@ const frameMaterialAttr: AttributeDefinition = {
   key: "frameMaterial",
   label: "Runkomateriaali",
   type: "select",
-  options: ["Alumiini", "Hiilikuitu", "Muu"],
+  options: ["Alumiini", "Hiilikuitu", "Teräs", "Titaani", "Muu"],
   filterable: true,
 };
 
@@ -144,24 +106,18 @@ const bikeBrakeTypeAttr: AttributeDefinition = {
 };
 
 const bikeBaseAttrs: AttributeDefinition[] = [
-  frameSizeAttr,
-  gearsAttr,
+  conditionAttr,
+  electricAttr,
   bikeBrandAttr,
+  frameSizeAttr,
+  frameMaterialAttr,
+  gearsAttr,
   drivetrainTypeAttr,
   groupsetMfrAttr,
-  frameMaterialAttr,
   bikeGenderAttr,
   colorAttr,
   bikeBrakeTypeAttr,
 ];
-
-const componentBaseAttrs: AttributeDefinition[] = [
-  conditionAttr,
-  brandAttr,
-  modelAttr,
-];
-
-const gearBaseAttrs: AttributeDefinition[] = [conditionAttr, brandAttr];
 
 // ─── Category tree ───────────────────────────────────────────────
 
@@ -171,558 +127,130 @@ export const categoryGroups: CategoryGroup[] = [
     name: "Polkupyörät",
     categories: [
       {
-        id: "tasamaapyorat",
-        name: "Tasamaapyörät",
-        slug: "tasamaapyorat",
-        children: [
-          {
-            id: "tasamaa-triathlon",
-            name: "Triathlon / Aika-ajo",
-            slug: "triathlon-aika-ajo",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "tasamaa-maantie",
-            name: "Maantie",
-            slug: "maantie",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "tasamaa-cyclocross-gravel",
-            name: "Cyclocross / Gravel",
-            slug: "cyclocross-gravel",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "tasamaa-hybrid-fitness",
-            name: "Hybrid / Fitness",
-            slug: "hybrid-fitness",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "tasamaa-rata",
-            name: "Rata",
-            slug: "rata",
-            attributes: bikeBaseAttrs,
-          },
-        ],
+        id: "gravel",
+        name: "Gravel-pyörä",
+        slug: "gravel-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "maastopyorat",
-        name: "Maastopyörät",
-        slug: "maastopyorat",
-        children: [
-          {
-            id: "maasto-rigid",
-            name: "Joustamattomat (Rigid)",
-            slug: "joustamattomat",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "maasto-fatbike",
-            name: "Fatbike",
-            slug: "fatbike",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "tireWidth",
-                label: "Renkaan leveys",
-                type: "select",
-                options: ['3.8"', '4.0"', '4.5"', '4.8"', '5.0"'],
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "maasto-hardtail",
-            name: "Hardtail (Etujousitetut)",
-            slug: "hardtail",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "forkTravel",
-                label: "Keulan jousto (mm)",
-                type: "number",
-                min: 80,
-                max: 200,
-                unit: "mm",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "maasto-taysjousitettu",
-            name: "Täysjousitettu",
-            slug: "taysjousitettu",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "rearTravel",
-                label: "Takajousto (mm)",
-                type: "number",
-                min: 80,
-                max: 250,
-                unit: "mm",
-                filterable: true,
-              },
-            ],
-          },
-        ],
+        id: "maantie",
+        name: "Maantiepyörä",
+        slug: "maantiepyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "peruspyorat",
-        name: "Peruspyörät",
-        slug: "peruspyorat",
-        children: [
-          {
-            id: "perus-lasten",
-            name: "Lasten pyörät",
-            slug: "lasten-pyorat",
-            attributes: [
-              conditionAttr,
-              brandAttr,
-              modelAttr,
-              yearAttr,
-              wheelSizeAttr,
-            ],
-          },
-          {
-            id: "perus-yksivaihteiset",
-            name: "Yksivaihteiset",
-            slug: "yksivaihteiset",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "perus-napavaihteiset",
-            name: "Napavaihteiset",
-            slug: "napavaihteiset",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "gearCount",
-                label: "Vaihdemäärä",
-                type: "select",
-                options: ["3", "5", "7", "8", "11", "14"],
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "perus-ketjuvaihteiset",
-            name: "Ketjuvaihteiset",
-            slug: "ketjuvaihteiset",
-            attributes: bikeBaseAttrs,
-          },
-        ],
+        id: "aero-maantie",
+        name: "Aero-maantiepyörä",
+        slug: "aero-maantiepyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "sahkopyorat",
-        name: "Sähköpyörät",
-        slug: "sahkopyorat",
-        children: [
-          {
-            id: "sahko-tasamaa",
-            name: "Sähkö - Tasamaa",
-            slug: "sahko-tasamaa",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "motorBrand",
-                label: "Moottorin merkki",
-                type: "text",
-                filterable: true,
-              },
-              {
-                key: "batteryWh",
-                label: "Akun kapasiteetti (Wh)",
-                type: "number",
-                min: 200,
-                max: 1000,
-                unit: "Wh",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "sahko-maasto",
-            name: "Sähkö - Maasto",
-            slug: "sahko-maasto",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "motorBrand",
-                label: "Moottorin merkki",
-                type: "text",
-                filterable: true,
-              },
-              {
-                key: "batteryWh",
-                label: "Akun kapasiteetti (Wh)",
-                type: "number",
-                min: 200,
-                max: 1000,
-                unit: "Wh",
-                filterable: true,
-              },
-            ],
-          },
-          {
-            id: "sahko-muut",
-            name: "Muut sähköpyörät",
-            slug: "muut-sahkopyorat",
-            attributes: [
-              ...bikeBaseAttrs,
-              {
-                key: "motorBrand",
-                label: "Moottorin merkki",
-                type: "text",
-                filterable: true,
-              },
-              {
-                key: "batteryWh",
-                label: "Akun kapasiteetti (Wh)",
-                type: "number",
-                min: 200,
-                max: 1000,
-                unit: "Wh",
-                filterable: true,
-              },
-            ],
-          },
-        ],
+        id: "endurance",
+        name: "Endurance-pyörä",
+        slug: "endurance-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "muut-pyorat",
-        name: "Muut pyörät",
-        slug: "muut-pyorat",
-        children: [
-          {
-            id: "muut-fixie",
-            name: "Fixed Gear (Fiksit)",
-            slug: "fixed-gear",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "muut-vintage",
-            name: "Vintage / Retro",
-            slug: "vintage-retro",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "muut-bmx",
-            name: "BMX",
-            slug: "bmx",
-            attributes: [
-              conditionAttr,
-              brandAttr,
-              modelAttr,
-              yearAttr,
-              wheelSizeAttr,
-            ],
-          },
-          {
-            id: "muut-dirt-street",
-            name: "Dirt / Street",
-            slug: "dirt-street",
-            attributes: [
-              conditionAttr,
-              brandAttr,
-              modelAttr,
-              yearAttr,
-              wheelSizeAttr,
-            ],
-          },
-          {
-            id: "muut-tavara",
-            name: "Tavarapyörät (Cargo)",
-            slug: "tavarapyorat",
-            attributes: bikeBaseAttrs,
-          },
-          {
-            id: "muut-sekalaiset",
-            name: "Muille osastoille sopimattomat",
-            slug: "muut-sekalaiset",
-            attributes: [conditionAttr, brandAttr],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "osat",
-    name: "Osat",
-    categories: [
-      {
-        id: "osat-rungot",
-        name: "Rungot ja rungkosetit",
-        slug: "rungot",
-        attributes: [
-          ...componentBaseAttrs,
-          frameSizeAttr,
-          materialAttr,
-          {
-            key: "bikeType",
-            label: "Pyörätyyppi",
-            type: "select",
-            options: ["Maasto", "Maantie", "Gravel", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "fitness",
+        name: "Fitnesspyörä",
+        slug: "fitnesspyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-haarukat-iskarit",
-        name: "Haarukat ja iskarit",
-        slug: "haarukat-iskarit",
-        attributes: [
-          ...componentBaseAttrs,
-          wheelSizeAttr,
-          {
-            key: "travel",
-            label: "Jousto (mm)",
-            type: "number",
-            min: 0,
-            max: 250,
-            unit: "mm",
-            filterable: true,
-          },
-          {
-            key: "axleType",
-            label: "Akselityyppi",
-            type: "select",
-            options: ["9mm QR", "15mm TA", "20mm TA", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "cyclocross",
+        name: "Cyclocross-pyörä",
+        slug: "cyclocross-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-kiekot",
-        name: "Kiekot",
-        slug: "kiekot",
-        attributes: [
-          ...componentBaseAttrs,
-          wheelSizeAttr,
-          {
-            key: "axleType",
-            label: "Akselityyppi",
-            type: "select",
-            options: ["9mm QR", "12mm TA", "15mm TA", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "aika-ajo-triathlon",
+        name: "Aika-ajo/triathlon-pyörä",
+        slug: "aika-ajo-triathlon-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-renkaat",
-        name: "Renkaat ja sisärenkaat",
-        slug: "renkaat",
-        attributes: [
-          ...componentBaseAttrs,
-          wheelSizeAttr,
-          {
-            key: "tireWidth",
-            label: "Leveys",
-            type: "text",
-          },
-        ],
+        id: "etujousitettu-maasto",
+        name: "Etujousitettu maastopyörä",
+        slug: "etujousitettu-maastopyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-satulat",
-        name: "Satulat ja tolpat",
-        slug: "satulat-tolpat",
-        attributes: [
-          ...componentBaseAttrs,
-          {
-            key: "seatpostDiameter",
-            label: "Tolpan halkaisija",
-            type: "select",
-            options: ["27.2mm", "30.9mm", "31.6mm", "34.9mm", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "taysjousto-maasto",
+        name: "Täysjoustomaastopyörä",
+        slug: "taysjousto-maastopyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-ohjaustangot",
-        name: "Ohjaustangot ja stemmat",
-        slug: "ohjaustangot-stemmat",
-        attributes: [
-          ...componentBaseAttrs,
-          {
-            key: "handlebarWidth",
-            label: "Leveys (mm)",
-            type: "number",
-            min: 380,
-            max: 850,
-            unit: "mm",
-          },
-        ],
+        id: "taysjaykka-maasto",
+        name: "Täysjäykkä maastopyörä",
+        slug: "taysjaykka-maastopyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-voimansiirto",
-        name: "Voimansiirto",
-        slug: "voimansiirto",
-        attributes: [
-          ...componentBaseAttrs,
-          {
-            key: "speeds",
-            label: "Vaihteet",
-            type: "select",
-            options: [
-              "1x",
-              "1x10",
-              "1x11",
-              "1x12",
-              "2x10",
-              "2x11",
-              "2x12",
-              "Muu",
-            ],
-            filterable: true,
-          },
-        ],
+        id: "fatbike",
+        name: "Fatbike",
+        slug: "fatbike",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-jarrut",
-        name: "Jarrut",
-        slug: "jarrut",
-        attributes: [
-          ...componentBaseAttrs,
-          {
-            key: "brakeType",
-            label: "Jarrutyyppi",
-            type: "select",
-            options: ["Levy - hydraulinen", "Levy - mekaaninen", "Vanne", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "bmx-dirt",
+        name: "BMX/dirt-pyörä",
+        slug: "bmx-dirt-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "osat-sahko",
-        name: "Sähköosat",
-        slug: "sahko-osat",
-        attributes: [
-          ...componentBaseAttrs,
-          {
-            key: "componentType",
-            label: "Osatyyppi",
-            type: "select",
-            options: [
-              "Moottori",
-              "Akku",
-              "Laturi",
-              "Näyttö",
-              "Ohjausyksikkö",
-              "Sensori",
-              "Kaapeli",
-              "Muu",
-            ],
-            filterable: true,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "varusteet",
-    name: "Varusteet",
-    categories: [
-      {
-        id: "varusteet-vaatteet",
-        name: "Vaatteet",
-        slug: "vaatteet",
-        attributes: [
-          ...gearBaseAttrs,
-          {
-            key: "size",
-            label: "Koko",
-            type: "select",
-            options: ["XXS", "XS", "S", "M", "L", "XL", "XXL"],
-            filterable: true,
-          },
-          genderAttr,
-        ],
+        id: "retki-randonneur",
+        name: "Retki/randonneur-pyörä",
+        slug: "retki-randonneur-pyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "varusteet-kyparat",
-        name: "Kypärät ja suojat",
-        slug: "kyparat-suojat",
-        attributes: [
-          ...gearBaseAttrs,
-          {
-            key: "size",
-            label: "Koko",
-            type: "select",
-            options: ["XS", "S", "M", "L", "XL"],
-            filterable: true,
-          },
-        ],
+        id: "hybridi",
+        name: "Hybridipyörä",
+        slug: "hybridipyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "varusteet-kengat",
-        name: "Kengät",
-        slug: "kengat",
-        attributes: [
-          ...gearBaseAttrs,
-          {
-            key: "shoeSize",
-            label: "Koko (EU)",
-            type: "number",
-            min: 30,
-            max: 50,
-            filterable: true,
-          },
-          {
-            key: "cleatType",
-            label: "Lukkotyyppi",
-            type: "select",
-            options: ["SPD", "SPD-SL", "Look", "Ei lukkoja", "Muu"],
-            filterable: true,
-          },
-        ],
+        id: "fiksi-sinkula",
+        name: "Fiksi/sinkula",
+        slug: "fiksi-sinkula",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "varusteet-elektroniikka",
-        name: "Elektroniikka",
-        slug: "elektroniikka",
-        attributes: [
-          ...gearBaseAttrs,
-          {
-            key: "deviceType",
-            label: "Laitetyyppi",
-            type: "select",
-            options: [
-              "Mittari",
-              "Valot",
-              "GPS",
-              "Kamera",
-              "Harjoitusvastus",
-              "Muu",
-            ],
-            filterable: true,
-          },
-        ],
+        id: "taittopyora",
+        name: "Taittopyörä",
+        slug: "taittopyora",
+        attributes: bikeBaseAttrs,
       },
       {
-        id: "varusteet-muut",
-        name: "Muut varusteet",
-        slug: "muut-varusteet",
-        attributes: [
-          ...gearBaseAttrs,
-          {
-            key: "accessoryType",
-            label: "Tyyppi",
-            type: "select",
-            options: [
-              "Laukut",
-              "Peräkärryt",
-              "Työkalut",
-              "Lokasuojat",
-              "Reput",
-              "Lukot",
-              "Tarakka",
-              "Muu",
-            ],
-            filterable: true,
-          },
-        ],
+        id: "nojapyora",
+        name: "Nojapyörä",
+        slug: "nojapyora",
+        attributes: bikeBaseAttrs,
+      },
+      {
+        id: "ratapyora",
+        name: "Ratapyörä",
+        slug: "ratapyora",
+        attributes: bikeBaseAttrs,
+      },
+      {
+        id: "tavarapyora",
+        name: "Tavarapyörä",
+        slug: "tavarapyora",
+        attributes: bikeBaseAttrs,
+      },
+      {
+        id: "lasten-potkupyora",
+        name: "Lasten potkupyörä",
+        slug: "lasten-potkupyora",
+        attributes: bikeBaseAttrs,
+      },
+      {
+        id: "muu",
+        name: "Muu",
+        slug: "muu",
+        attributes: bikeBaseAttrs,
       },
     ],
   },
