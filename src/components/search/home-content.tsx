@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { SearchBar } from "./search-bar";
 import { FilterPanel } from "./filter-panel";
 import { SearchResults } from "./search-results";
 import type { ProductWithImages } from "@/types";
@@ -113,11 +112,6 @@ export function HomeContent({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Etsi polkupyöriä ja osia</h1>
-        <SearchBar defaultValue={initialQuery} onSearch={handleSearch} />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         {/* Sidebar */}
         <FilterPanel
@@ -125,6 +119,8 @@ export function HomeContent({
           filters={initialFilters}
           onFilterChange={handleFilterChange}
           onCategoryChange={handleCategorySelect}
+          searchQuery={initialQuery}
+          onSearch={handleSearch}
         />
 
         {/* Main content */}

@@ -7,12 +7,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getAttributesForCategory, categoryGroups } from "@/lib/categories";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import { SearchBar } from "./search-bar";
 
 type FilterPanelProps = {
   categoryId: string | null;
   filters: Record<string, string>;
   onFilterChange: (filters: Record<string, string>) => void;
   onCategoryChange: (categoryId: string | null) => void;
+  searchQuery: string;
+  onSearch: (query: string) => void;
 };
 
 function CheckboxFilterGroup({
@@ -92,6 +95,8 @@ export function FilterPanel({
   filters,
   onFilterChange,
   onCategoryChange,
+  searchQuery,
+  onSearch,
 }: FilterPanelProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [additionalFiltersOpen, setAdditionalFiltersOpen] = useState(false);
@@ -125,6 +130,9 @@ export function FilterPanel({
 
   const sidebarContent = (
     <div className="space-y-5">
+      {/* Free text search */}
+      <SearchBar defaultValue={searchQuery} onSearch={onSearch} />
+
       {/* Sähköpyörä / Luomupyörä toggle pills */}
       <div className="flex gap-2">
         {(["Luomupyörä", "Sähköpyörä"] as const).map((pill) => {
