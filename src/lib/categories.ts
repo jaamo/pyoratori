@@ -4,9 +4,9 @@ import type { CategoryGroup, AttributeDefinition } from "@/types";
 
 const frameSizeAttr: AttributeDefinition = {
   key: "frameSize",
-  label: "Rungon koko",
+  label: "Runkokoko",
   type: "select",
-  options: ["XS", "S", "M", "L", "XL", "XXL"],
+  options: ["XXS", "XS", "S", "M", "L", "XL", "XXL", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "Muu"],
   filterable: true,
 };
 
@@ -65,15 +65,94 @@ const genderAttr: AttributeDefinition = {
   filterable: true,
 };
 
+const gearsAttr: AttributeDefinition = {
+  key: "gears",
+  label: "Vaihteet (Voimansiirto)",
+  type: "select",
+  options: [
+    "1 vaihde (Single Speed)",
+    "2–7 vaihdetta",
+    "1x8", "1x9", "1x10", "1x11", "1x12",
+    "2x8", "2x9", "2x10", "2x11", "2x12",
+    "3x8", "3x9", "3x10", "3x11", "3x12",
+    "Muu",
+  ],
+  filterable: true,
+};
+
+const bikeBrandAttr: AttributeDefinition = {
+  key: "bikeBrand",
+  label: "Merkki",
+  type: "select",
+  options: [
+    "Bianchi", "BMC", "Cannondale", "FOCUS", "Giant", "Lapierre", "Liv",
+    "Orbea", "SCOTT", "Simplon", "Specialized", "Trek", "Wilier", "Muu",
+  ],
+  filterable: true,
+};
+
+const drivetrainTypeAttr: AttributeDefinition = {
+  key: "drivetrainType",
+  label: "Vaihteiston tyyppi",
+  type: "select",
+  options: ["Mekaaninen", "Sähköinen", "Muu"],
+  filterable: true,
+};
+
+const groupsetMfrAttr: AttributeDefinition = {
+  key: "groupsetMfr",
+  label: "Osasarjan valmistaja",
+  type: "select",
+  options: ["Shimano", "SRAM", "Muu"],
+  filterable: true,
+};
+
+const frameMaterialAttr: AttributeDefinition = {
+  key: "frameMaterial",
+  label: "Runkomateriaali",
+  type: "select",
+  options: ["Alumiini", "Hiilikuitu", "Muu"],
+  filterable: true,
+};
+
+const bikeGenderAttr: AttributeDefinition = {
+  key: "bikeGender",
+  label: "Sukupuoli / Geometria",
+  type: "select",
+  options: ["Miehet", "Naiset", "Muu"],
+  filterable: true,
+};
+
+const colorAttr: AttributeDefinition = {
+  key: "color",
+  label: "Väri",
+  type: "select",
+  options: [
+    "Harmaa", "Musta", "Sininen", "Valkoinen", "Punainen", "Violetti",
+    "Vihreä", "Vaaleanpunainen", "Beige", "Hopea", "Turkoosi", "Ruskea",
+    "Oranssi", "Neon", "Oliivi", "Muu",
+  ],
+  filterable: true,
+};
+
+const bikeBrakeTypeAttr: AttributeDefinition = {
+  key: "bikeBrakeType",
+  label: "Jarrutyyppi",
+  type: "select",
+  options: ["Hydraulinen", "Mekaaninen", "Muu"],
+  filterable: true,
+};
+
 const bikeBaseAttrs: AttributeDefinition[] = [
-  conditionAttr,
-  brandAttr,
-  modelAttr,
-  yearAttr,
   frameSizeAttr,
-  wheelSizeAttr,
-  materialAttr,
-  genderAttr,
+  gearsAttr,
+  bikeBrandAttr,
+  drivetrainTypeAttr,
+  groupsetMfrAttr,
+  frameMaterialAttr,
+  bikeGenderAttr,
+  colorAttr,
+  bikeBrakeTypeAttr,
 ];
 
 const componentBaseAttrs: AttributeDefinition[] = [
