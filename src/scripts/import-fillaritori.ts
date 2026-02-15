@@ -1,8 +1,9 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, products, productAttributes, attributes, attributeValues } from "../server/db/schema";
+import { users, products, productAttributes, attributes, attributeValues, images } from "../server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
+import { processImage } from "../lib/images";
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ interface ParsedListing {
   price: number; // cents
   location: string;
   sourceUrl: string;
+  imageUrls: string[];
   attributes: Record<string, string>;
 }
 
@@ -43,6 +45,23 @@ async function fetchPage(url: string): Promise<string> {
     throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
   }
   return res.text();
+}
+
+async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; PyoratoriImporter/1.0)",
+        Accept: "image/*",
+      },
+    });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    const arrayBuf = await res.arrayBuffer();
+    return { buffer: Buffer.from(arrayBuf), mimeType: contentType.split(";")[0].trim() };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Parse topic links from category page ───────────────────────
@@ -128,6 +147,24 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     return null;
   }
 
+  // Extract image URLs from the post content
+  const postContentEl = cheerio.load(postContent);
+  const imageUrls: string[] = [];
+  postContentEl("img").each((_, el) => {
+    const src = postContentEl(el).attr("src") || postContentEl(el).attr("data-src");
+    if (!src) return;
+    // Skip tiny images (emoticons, icons, etc.)
+    const width = parseInt(postContentEl(el).attr("width") || "0", 10);
+    const height = parseInt(postContentEl(el).attr("height") || "0", 10);
+    if ((width > 0 && width < 50) || (height > 0 && height < 50)) return;
+    // Skip common non-photo patterns
+    if (src.includes("emoticon") || src.includes("emoji") || src.includes("/icon")) return;
+    // Only keep http(s) URLs
+    if (src.startsWith("http")) {
+      imageUrls.push(src);
+    }
+  });
+
   // Convert HTML to text for field extraction
   const textContent = htmlToText(postContent);
 
@@ -166,6 +203,7 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     price,
     location,
     sourceUrl: "",
+    imageUrls,
     attributes: attrs,
   };
 }
@@ -346,6 +384,37 @@ async function insertProduct(
     expiresAt,
   });
 
+  // Download and import images
+  for (let i = 0; i < listing.imageUrls.length; i++) {
+    const imgUrl = listing.imageUrls[i];
+    try {
+      await sleep(FETCH_DELAY_MS);
+      const imgData = await fetchImageBuffer(imgUrl);
+      if (!imgData) {
+        console.warn(`    Image ${i + 1} failed to download: ${imgUrl}`);
+        continue;
+      }
+
+      const originalName = imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
+      const processed = await processImage(imgData.buffer, originalName, imgData.mimeType);
+
+      await db.insert(images).values({
+        productId: id,
+        filename: processed.filename,
+        originalName: processed.originalName,
+        mimeType: processed.mimeType,
+        width: processed.width,
+        height: processed.height,
+        sizeBytes: processed.sizeBytes,
+        sortOrder: i,
+      });
+
+      console.log(`    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`);
+    } catch (err) {
+      console.warn(`    Image ${i + 1} processing failed: ${err}`);
+    }
+  }
+
   // Insert attributes
   for (const [key, value] of Object.entries(listing.attributes)) {
     const attributeId = attrKeyToId.get(key);
@@ -440,7 +509,7 @@ async function main() {
       // Insert into DB
       try {
         const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
-        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€) → ${productId}`);
+        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`);
         totalImported++;
       } catch (err) {
         console.error(`  FAILED to insert: ${listing.title} - ${err}`);
