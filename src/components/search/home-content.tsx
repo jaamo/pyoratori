@@ -4,7 +4,21 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { FilterPanel } from "./filter-panel";
 import { SearchResults } from "./search-results";
+import { SearchBar } from "./search-bar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ProductWithImages } from "@/types";
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Uusimmat" },
+  { value: "price_asc", label: "Hinta: halvin ensin" },
+  { value: "price_desc", label: "Hinta: kallein ensin" },
+];
 
 type HomeContentProps = {
   initialProducts: ProductWithImages[];
@@ -111,26 +125,41 @@ export function HomeContent({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-        {/* Sidebar */}
-        <FilterPanel
-          categoryId={initialCategoryId}
-          filters={initialFilters}
-          onFilterChange={handleFilterChange}
-          onCategoryChange={handleCategorySelect}
-          searchQuery={initialQuery}
-          onSearch={handleSearch}
-        />
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      {/* Sidebar */}
+      <FilterPanel
+        categoryId={initialCategoryId}
+        filters={initialFilters}
+        onFilterChange={handleFilterChange}
+        onCategoryChange={handleCategorySelect}
+      />
 
-        {/* Main content */}
+      {/* Main content */}
+      <div className="space-y-6">
+        {/* Search + sort bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-card rounded-2xl p-4">
+          <div className="flex-1">
+            <SearchBar defaultValue={initialQuery} onSearch={handleSearch} />
+          </div>
+          <Select value={initialSort} onValueChange={handleSortChange}>
+            <SelectTrigger className="w-full sm:w-[200px] text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <SearchResults
           products={initialProducts}
           total={initialTotal}
           page={initialPage}
-          sort={initialSort}
           onPageChange={handlePageChange}
-          onSortChange={handleSortChange}
         />
       </div>
     </div>

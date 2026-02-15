@@ -2,13 +2,6 @@
 
 import { ProductCard } from "@/components/products/product-card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { ProductWithImages } from "@/types";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
@@ -16,24 +9,14 @@ type SearchResultsProps = {
   products: ProductWithImages[];
   total: number;
   page: number;
-  sort: string;
   onPageChange: (page: number) => void;
-  onSortChange: (sort: string) => void;
 };
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Uusimmat" },
-  { value: "price_asc", label: "Hinta: halvin ensin" },
-  { value: "price_desc", label: "Hinta: kallein ensin" },
-];
 
 export function SearchResults({
   products,
   total,
   page,
-  sort,
   onPageChange,
-  onSortChange,
 }: SearchResultsProps) {
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -52,23 +35,9 @@ export function SearchResults({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {total} {total === 1 ? "ilmoitus" : "ilmoitusta"}
-        </p>
-        <Select value={sort} onValueChange={onSortChange}>
-          <SelectTrigger className="w-[200px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {total} {total === 1 ? "ilmoitus" : "ilmoitusta"}
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (

@@ -22,7 +22,7 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/10 bg-black text-white">
-      <div className="container mx-auto flex h-14 items-center px-4">
+      <div className="container mx-auto flex h-16 items-center px-6">
         <Link href="/" className="mr-6 flex items-center">
           <Image src="/logo.svg" alt="pyoratori.com" width={160} height={22} priority className="brightness-0 invert" />
         </Link>
@@ -39,7 +39,7 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
         <div className="flex flex-1 items-center justify-end gap-2">
           {session?.user ? (
             <>
-              <Button asChild size="sm" className="hidden md:flex bg-white text-black hover:bg-white/90">
+              <Button asChild size="sm" className="hidden md:flex rounded-full bg-white text-black hover:bg-white/90">
                 <Link href="/ilmoitus/uusi">
                   <Plus className="mr-1 h-4 w-4" />
                   Uusi ilmoitus

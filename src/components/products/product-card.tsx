@@ -18,7 +18,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/ilmoitus/${product.id}`}>
-      <Card className="group overflow-hidden transition-shadow hover:shadow-md">
+      <Card className="group overflow-hidden rounded-2xl border shadow-none transition-colors hover:bg-muted/50">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {thumbFilename ? (
             <Image
