@@ -1,7 +1,6 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getAttributesForCategory, categoryGroups } from "@/lib/categories";
@@ -14,6 +13,36 @@ type FilterPanelProps = {
   onFilterChange: (filters: Record<string, string>) => void;
   onCategoryChange: (categoryId: string | null) => void;
 };
+
+function CollapsibleFilter({
+  label,
+  defaultOpen = false,
+  children,
+}: {
+  label: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between py-1"
+      >
+        <span className="text-sm font-semibold">{label}</span>
+        {open ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
 
 function CheckboxFilterGroup({
   label,
@@ -44,7 +73,6 @@ function CheckboxFilterGroup({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-semibold">{label}</Label>
       {showSearch && (
         <Input
           className="text-sm"
@@ -94,7 +122,6 @@ export function FilterPanel({
   onCategoryChange,
 }: FilterPanelProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [additionalFiltersOpen, setAdditionalFiltersOpen] = useState(false);
 
   const categoryAttributes = categoryId
     ? getAttributesForCategory(categoryId)
@@ -153,20 +180,21 @@ export function FilterPanel({
       </div>
 
       {/* Kategoria */}
-      <CheckboxFilterGroup
-        label="Kategoria"
-        options={allCategories.map((cat) => ({
-          value: cat.id,
-          label: cat.name,
-        }))}
-        selectedValue={categoryId || ""}
-        onChange={(value) => onCategoryChange(value || null)}
-        showSearch={allCategories.length > 5}
-      />
+      <CollapsibleFilter label="Kategoria" defaultOpen>
+        <CheckboxFilterGroup
+          label="Kategoria"
+          options={allCategories.map((cat) => ({
+            value: cat.id,
+            label: cat.name,
+          }))}
+          selectedValue={categoryId || ""}
+          onChange={(value) => onCategoryChange(value || null)}
+          showSearch={allCategories.length > 5}
+        />
+      </CollapsibleFilter>
 
       {/* Hinta */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Hinta</Label>
+      <CollapsibleFilter label="Hinta" defaultOpen>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -184,73 +212,46 @@ export function FilterPanel({
             placeholder="Max €"
           />
         </div>
-      </div>
+      </CollapsibleFilter>
 
       {/* Sijainti */}
-      <div className="space-y-2">
-        <Label className="text-sm font-semibold">Sijainti</Label>
+      <CollapsibleFilter label="Sijainti" defaultOpen>
         <Input
           className="text-sm"
           value={filters.location || ""}
           onChange={(e) => handleChange("location", e.target.value)}
           placeholder="Esim. Helsinki"
         />
-      </div>
+      </CollapsibleFilter>
 
-      {/* Dynamic attribute filters - collapsed by default */}
-      {filterableAttributes.length > 0 && (
-        <div className="border-t pt-4">
-          <button
-            type="button"
-            onClick={() => setAdditionalFiltersOpen(!additionalFiltersOpen)}
-            className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-          >
-            <span>Tarkemmat suodattimet</span>
-            {additionalFiltersOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </button>
-
-          {additionalFiltersOpen && (
-            <div className="mt-4 space-y-5">
-              {filterableAttributes.map((attr) => (
-                <div key={attr.key}>
-                  {attr.type === "select" && attr.options ? (
-                    <CheckboxFilterGroup
-                      label={attr.label}
-                      options={attr.options.map((opt) => ({
-                        value: opt,
-                        label: opt,
-                      }))}
-                      selectedValue={filters[`attr_${attr.key}`] || ""}
-                      onChange={(value) =>
-                        handleChange(`attr_${attr.key}`, value)
-                      }
-                      showSearch={attr.options.length > 5}
-                    />
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-semibold">
-                        {attr.label}
-                      </Label>
-                      <Input
-                        className="text-sm"
-                        type={attr.type === "number" ? "number" : "text"}
-                        value={filters[`attr_${attr.key}`] || ""}
-                        onChange={(e) =>
-                          handleChange(`attr_${attr.key}`, e.target.value)
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+      {/* Dynamic attribute filters - each individually collapsible */}
+      {filterableAttributes.map((attr) => (
+        <CollapsibleFilter key={attr.key} label={attr.label}>
+          {attr.type === "select" && attr.options ? (
+            <CheckboxFilterGroup
+              label={attr.label}
+              options={attr.options.map((opt) => ({
+                value: opt,
+                label: opt,
+              }))}
+              selectedValue={filters[`attr_${attr.key}`] || ""}
+              onChange={(value) =>
+                handleChange(`attr_${attr.key}`, value)
+              }
+              showSearch={attr.options.length > 5}
+            />
+          ) : (
+            <Input
+              className="text-sm"
+              type={attr.type === "number" ? "number" : "text"}
+              value={filters[`attr_${attr.key}`] || ""}
+              onChange={(e) =>
+                handleChange(`attr_${attr.key}`, e.target.value)
+              }
+            />
           )}
-        </div>
-      )}
+        </CollapsibleFilter>
+      ))}
 
       {/* Clear all */}
       {hasActiveFilters && (
