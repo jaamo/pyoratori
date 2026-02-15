@@ -25,6 +25,9 @@ export function Footer() {
             <Link href="/" className="hover:text-white">
               Etusivu
             </Link>
+            <Link href="/tietopankki" className="hover:text-white">
+              Tietopankki
+            </Link>
           </div>
         </div>
         <div className="mt-6 border-t border-white/20 pt-4 text-center text-xs text-white/70">
