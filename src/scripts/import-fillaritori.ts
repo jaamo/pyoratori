@@ -47,6 +47,16 @@ async function fetchPage(url: string): Promise<string> {
   return res.text();
 }
 
+// JPEG starts with FF D8, PNG with 89 50 4E 47, WebP with 52 49 46 46 ... 57 45 42 50
+function detectImageMime(buf: Buffer): string | null {
+  if (buf.length < 12) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return "image/webp";
+  return null;
+}
+
 async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
   try {
     const res = await fetch(url, {
@@ -56,9 +66,12 @@ async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType
       },
     });
     if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") || "image/jpeg";
     const arrayBuf = await res.arrayBuffer();
-    return { buffer: Buffer.from(arrayBuf), mimeType: contentType.split(";")[0].trim() };
+    const buffer = Buffer.from(arrayBuf);
+    // Verify the response is actually an image by checking magic bytes
+    const mimeType = detectImageMime(buffer);
+    if (!mimeType) return null;
+    return { buffer, mimeType };
   } catch {
     return null;
   }
@@ -147,23 +160,30 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     return null;
   }
 
-  // Extract image URLs from the post content
-  const postContentEl = cheerio.load(postContent);
-  const imageUrls: string[] = [];
-  postContentEl("img").each((_, el) => {
-    const src = postContentEl(el).attr("src") || postContentEl(el).attr("data-src");
-    if (!src) return;
-    // Skip tiny images (emoticons, icons, etc.)
-    const width = parseInt(postContentEl(el).attr("width") || "0", 10);
-    const height = parseInt(postContentEl(el).attr("height") || "0", 10);
-    if ((width > 0 && width < 50) || (height > 0 && height < 50)) return;
-    // Skip common non-photo patterns
-    if (src.includes("emoticon") || src.includes("emoji") || src.includes("/icon")) return;
-    // Only keep http(s) URLs
-    if (src.startsWith("http")) {
-      imageUrls.push(src);
+  // Extract first image URL — look for <a> links where href starts with //cdn2.fillaritori.com
+  let imageUrl: string | null = null;
+  $("a").each((_, el) => {
+    if (imageUrl) return;
+    const href = $(el).attr("href");
+    if (!href) return;
+    // Only match hrefs that point directly to cdn2 (not embedded in query params)
+    if (href.startsWith("//cdn2.fillaritori.com/") || href.startsWith("https://cdn2.fillaritori.com/")) {
+      imageUrl = href.startsWith("//") ? `https:${href}` : href;
     }
   });
+  // Fallback: look for <img> tags from cdn2 inside the post content
+  if (!imageUrl) {
+    const postEl = cheerio.load(postContent);
+    postEl("img").each((_, el) => {
+      if (imageUrl) return;
+      const src = postEl(el).attr("src");
+      if (!src) return;
+      if (src.startsWith("//cdn2.fillaritori.com/") || src.startsWith("https://cdn2.fillaritori.com/")) {
+        imageUrl = src.startsWith("//") ? `https:${src}` : src;
+      }
+    });
+  }
+  const imageUrls = imageUrl ? [imageUrl] : [];
 
   // Convert HTML to text for field extraction
   const textContent = htmlToText(postContent);
@@ -352,11 +372,11 @@ async function getAttributeKeyToId(): Promise<Map<string, string>> {
   return new Map(rows.map((r) => [r.key, r.id]));
 }
 
-async function productExistsByTitle(title: string): Promise<boolean> {
+async function productExistsByExternalUrl(url: string): Promise<boolean> {
   const existing = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.title, title))
+    .where(eq(products.externalUrl, url))
     .limit(1);
   return existing.length > 0;
 }
@@ -453,7 +473,11 @@ async function insertProduct(
 // ─── Main ───────────────────────────────────────────────────────
 
 async function main() {
-  console.log("=== Fillaritori.com Importer ===\n");
+  const args = process.argv.slice(2);
+  const limitArg = args.find((a) => a.startsWith("--limit="));
+  const limit = limitArg ? parseInt(limitArg.split("=")[1], 10) : Infinity;
+
+  console.log(`=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}\n`);
 
   const authorId = await ensureImporterUser();
   const attrKeyToId = await getAttributeKeyToId();
@@ -477,8 +501,10 @@ async function main() {
     console.log(`  Found ${topics.length} topics`);
 
     for (const topic of topics) {
-      // Check for duplicate
-      if (await productExistsByTitle(topic.title)) {
+      if (totalImported >= limit) break;
+
+      // Check for duplicate by external URL
+      if (await productExistsByExternalUrl(topic.url)) {
         console.log(`  SKIP (duplicate): ${topic.title}`);
         totalSkipped++;
         continue;
