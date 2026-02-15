@@ -341,6 +341,7 @@ async function insertProduct(
     price: listing.price,
     location: listing.location,
     categoryId,
+    externalUrl: listing.sourceUrl || null,
     status: "active",
     expiresAt,
   });
