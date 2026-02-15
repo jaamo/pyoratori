@@ -1,8 +1,9 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, products, productAttributes, attributes, attributeValues } from "../server/db/schema";
+import { users, products, productAttributes, attributes, attributeValues, images } from "../server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
+import { processImage } from "../lib/images";
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ interface ParsedListing {
   price: number; // cents
   location: string;
   sourceUrl: string;
+  imageUrls: string[];
   attributes: Record<string, string>;
 }
 
@@ -43,6 +45,36 @@ async function fetchPage(url: string): Promise<string> {
     throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
   }
   return res.text();
+}
+
+// JPEG starts with FF D8, PNG with 89 50 4E 47, WebP with 52 49 46 46 ... 57 45 42 50
+function detectImageMime(buf: Buffer): string | null {
+  if (buf.length < 12) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return "image/webp";
+  return null;
+}
+
+async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; PyoratoriImporter/1.0)",
+        Accept: "image/*",
+      },
+    });
+    if (!res.ok) return null;
+    const arrayBuf = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuf);
+    // Verify the response is actually an image by checking magic bytes
+    const mimeType = detectImageMime(buffer);
+    if (!mimeType) return null;
+    return { buffer, mimeType };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Parse topic links from category page ───────────────────────
@@ -128,6 +160,31 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     return null;
   }
 
+  // Extract first image URL — look for <a> links where href starts with //cdn2.fillaritori.com
+  let imageUrl: string | null = null;
+  $("a").each((_, el) => {
+    if (imageUrl) return;
+    const href = $(el).attr("href");
+    if (!href) return;
+    // Only match hrefs that point directly to cdn2 (not embedded in query params)
+    if (href.startsWith("//cdn2.fillaritori.com/") || href.startsWith("https://cdn2.fillaritori.com/")) {
+      imageUrl = href.startsWith("//") ? `https:${href}` : href;
+    }
+  });
+  // Fallback: look for <img> tags from cdn2 inside the post content
+  if (!imageUrl) {
+    const postEl = cheerio.load(postContent);
+    postEl("img").each((_, el) => {
+      if (imageUrl) return;
+      const src = postEl(el).attr("src");
+      if (!src) return;
+      if (src.startsWith("//cdn2.fillaritori.com/") || src.startsWith("https://cdn2.fillaritori.com/")) {
+        imageUrl = src.startsWith("//") ? `https:${src}` : src;
+      }
+    });
+  }
+  const imageUrls = imageUrl ? [imageUrl] : [];
+
   // Convert HTML to text for field extraction
   const textContent = htmlToText(postContent);
 
@@ -166,6 +223,7 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     price,
     location,
     sourceUrl: "",
+    imageUrls,
     attributes: attrs,
   };
 }
@@ -314,11 +372,11 @@ async function getAttributeKeyToId(): Promise<Map<string, string>> {
   return new Map(rows.map((r) => [r.key, r.id]));
 }
 
-async function productExistsByTitle(title: string): Promise<boolean> {
+async function productExistsByExternalUrl(url: string): Promise<boolean> {
   const existing = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.title, title))
+    .where(eq(products.externalUrl, url))
     .limit(1);
   return existing.length > 0;
 }
@@ -341,9 +399,41 @@ async function insertProduct(
     price: listing.price,
     location: listing.location,
     categoryId,
+    externalUrl: listing.sourceUrl || null,
     status: "active",
     expiresAt,
   });
+
+  // Download and import images
+  for (let i = 0; i < listing.imageUrls.length; i++) {
+    const imgUrl = listing.imageUrls[i];
+    try {
+      await sleep(FETCH_DELAY_MS);
+      const imgData = await fetchImageBuffer(imgUrl);
+      if (!imgData) {
+        console.warn(`    Image ${i + 1} failed to download: ${imgUrl}`);
+        continue;
+      }
+
+      const originalName = imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
+      const processed = await processImage(imgData.buffer, originalName, imgData.mimeType);
+
+      await db.insert(images).values({
+        productId: id,
+        filename: processed.filename,
+        originalName: processed.originalName,
+        mimeType: processed.mimeType,
+        width: processed.width,
+        height: processed.height,
+        sizeBytes: processed.sizeBytes,
+        sortOrder: i,
+      });
+
+      console.log(`    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`);
+    } catch (err) {
+      console.warn(`    Image ${i + 1} processing failed: ${err}`);
+    }
+  }
 
   // Insert attributes
   for (const [key, value] of Object.entries(listing.attributes)) {
@@ -383,7 +473,11 @@ async function insertProduct(
 // ─── Main ───────────────────────────────────────────────────────
 
 async function main() {
-  console.log("=== Fillaritori.com Importer ===\n");
+  const args = process.argv.slice(2);
+  const limitArg = args.find((a) => a.startsWith("--limit="));
+  const limit = limitArg ? parseInt(limitArg.split("=")[1], 10) : Infinity;
+
+  console.log(`=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}\n`);
 
   const authorId = await ensureImporterUser();
   const attrKeyToId = await getAttributeKeyToId();
@@ -407,8 +501,10 @@ async function main() {
     console.log(`  Found ${topics.length} topics`);
 
     for (const topic of topics) {
-      // Check for duplicate
-      if (await productExistsByTitle(topic.title)) {
+      if (totalImported >= limit) break;
+
+      // Check for duplicate by external URL
+      if (await productExistsByExternalUrl(topic.url)) {
         console.log(`  SKIP (duplicate): ${topic.title}`);
         totalSkipped++;
         continue;
@@ -439,7 +535,7 @@ async function main() {
       // Insert into DB
       try {
         const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
-        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€) → ${productId}`);
+        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`);
         totalImported++;
       } catch (err) {
         console.error(`  FAILED to insert: ${listing.title} - ${err}`);

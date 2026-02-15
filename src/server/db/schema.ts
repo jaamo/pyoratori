@@ -115,6 +115,7 @@ export const products = sqliteTable("products", {
   categoryId: text("categoryId")
     .notNull()
     .references(() => categories.id),
+  externalUrl: text("externalUrl"),
   status: text("status").notNull().default("active"),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
