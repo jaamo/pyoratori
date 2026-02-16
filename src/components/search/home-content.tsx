@@ -72,7 +72,7 @@ export function HomeContent({
       }
 
       const qs = params.toString();
-      router.push(qs ? `/?${qs}` : "/", { scroll: false });
+      router.push(qs ? `/haku?${qs}` : "/haku", { scroll: false });
     },
     [
       router,

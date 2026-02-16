@@ -189,6 +189,37 @@ export async function searchProducts(
   return { products: productsWithImages, total };
 }
 
+export async function getLatestProducts(
+  limit: number = 4
+): Promise<ProductWithImages[]> {
+  const results = await db
+    .select()
+    .from(products)
+    .where(
+      and(
+        eq(products.status, PRODUCT_STATUS.ACTIVE),
+        gte(products.expiresAt, new Date())
+      )
+    )
+    .orderBy(desc(products.createdAt))
+    .limit(limit);
+
+  const productIds = results.map((p) => p.id);
+  const attrsMap = await getAttributesForProducts(productIds);
+
+  const productsWithImages: ProductWithImages[] = await Promise.all(
+    results.map(async (p) => {
+      const productImages = await db.query.images.findMany({
+        where: eq(images.productId, p.id),
+        orderBy: [images.sortOrder],
+      });
+      return { ...p, images: productImages, attributes: attrsMap.get(p.id) || {} };
+    })
+  );
+
+  return productsWithImages;
+}
+
 export async function getProductsByUser(
   userId: string
 ): Promise<ProductWithImages[]> {
