@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Search, Shield, Bike } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLatestProducts } from "@/server/queries/products";
 
@@ -117,11 +117,11 @@ export default async function HomePage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="container mx-auto px-4 py-16 md:py-20">
+      <section className="container mx-auto px-4 py-32 md:py-40">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center space-y-3 p-6">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
-              <Bike className="h-7 w-7 text-[#642ca9]" />
+            <div className="mx-auto flex h-24 w-24 items-center justify-center">
+              <Image src="/icon-solar.svg" alt="" width={96} height={96} />
             </div>
             <h3 className="text-lg font-semibold">Tehokas haku</h3>
             <p className="text-muted-foreground text-sm">
@@ -129,8 +129,8 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
-              <Search className="h-7 w-7 text-[#642ca9]" />
+            <div className="mx-auto flex h-24 w-24 items-center justify-center">
+              <Image src="/icon-bicycle.svg" alt="" width={96} height={96} />
             </div>
             <h3 className="text-lg font-semibold">Paras paikka myydä</h3>
             <p className="text-muted-foreground text-sm">
@@ -138,8 +138,8 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
-              <Shield className="h-7 w-7 text-[#642ca9]" />
+            <div className="mx-auto flex h-24 w-24 items-center justify-center">
+              <Image src="/icon-planet.svg" alt="" width={96} height={96} />
             </div>
             <h3 className="text-lg font-semibold">Kattava valikoima</h3>
             <p className="text-muted-foreground text-sm">
@@ -150,7 +150,8 @@ export default async function HomePage() {
       </section>
 
       {/* Latest Bikes Section */}
-      <section className="container mx-auto px-4 pb-16 md:pb-20">
+      <section className="bg-[#CFDBD5]">
+      <div className="container mx-auto px-4 py-16 md:py-20">
         <h2 className="text-2xl font-bold mb-8">Uusimmat ilmoitukset</h2>
 
         {latestProducts.length > 0 ? (
@@ -208,6 +209,7 @@ export default async function HomePage() {
             <Link href="/haku">Selaa kaikkia ilmoituksia</Link>
           </Button>
         </div>
+      </div>
       </section>
     </div>
   );
