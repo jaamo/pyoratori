@@ -51,7 +51,7 @@ export default async function HomePage() {
               Löydä uusi pyöräsi
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-md mx-auto">
-              Suomen kattavin pyörien hakukone ja kauppapaikka
+              Pyoratori.com Suomen kattavin pyörien hakukone ja kauppapaikka
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
@@ -67,6 +67,13 @@ export default async function HomePage() {
                 className="rounded-full bg-white text-[#642ca9] hover:bg-white/90 font-semibold px-8"
               >
                 <Link href="/haku">Luomupyörät</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[#642ca9] text-white hover:bg-[#642ca9]/90 font-semibold px-8"
+              >
+                <Link href="/ilmoitus/uusi">Myy pyöräsi</Link>
               </Button>
             </div>
           </div>
@@ -147,7 +154,7 @@ export default async function HomePage() {
         <h2 className="text-2xl font-bold mb-8">Uusimmat ilmoitukset</h2>
 
         {latestProducts.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {latestProducts.map((product) => {
               const thumbnail = product.images[0];
               const thumbFilename = thumbnail
@@ -158,16 +165,16 @@ export default async function HomePage() {
                 <Link
                   key={product.id}
                   href={`/ilmoitus/${product.id}`}
-                  className="flex gap-4 rounded-2xl border p-3 transition-colors hover:bg-muted/50"
+                  className="rounded-2xl border p-3 transition-colors hover:bg-muted/50"
                 >
-                  <div className="relative h-28 w-40 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
                     {thumbFilename ? (
                       <Image
                         src={`/api/uploads/${thumbFilename}`}
                         alt={product.title}
                         fill
                         className="object-cover"
-                        sizes="160px"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -175,7 +182,7 @@ export default async function HomePage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col justify-center min-w-0">
+                  <div className="mt-3">
                     <h3 className="font-medium line-clamp-2">{product.title}</h3>
                     <p className="text-lg font-bold mt-1">
                       {(product.price / 100).toLocaleString("fi-FI", {
