@@ -1,7 +1,8 @@
 export const PRODUCT_STATUS = {
-  ACTIVE: "active",
+  PUBLIC: "public",
   EXPIRED: "expired",
   SOLD: "sold",
+  DELETED: "deleted",
 } as const;
 
 export type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];

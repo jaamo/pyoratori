@@ -3,7 +3,7 @@ import { db } from "../server/db/index";
 import { users, products, productAttributes, attributes, attributeValues, images } from "../server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
-import { processImage } from "../lib/images";
+import { processImage, deleteImageFiles } from "../lib/images";
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -101,11 +101,20 @@ function parseTopicLinks(html: string): Array<{ url: string; title: string; tag:
       if (gpTag !== "h4") return;
     }
 
-    topics.push({ url: href, title, tag: "" });
+    // Extract tag from nearby ipsBadge element (e.g. "Myydään", "Myyty")
+    // Walk up to the topic row container and look for the badge
+    let tag = "";
+    const topicRow = $(el).closest("li, tr, [data-role='topic']");
+    if (topicRow.length) {
+      const badge = topicRow.find("a.ipsBadge span").first();
+      if (badge.length) {
+        tag = badge.text().trim();
+      }
+    }
+
+    topics.push({ url: href, title, tag });
   });
 
-  // Try to extract tags (Myydään/Ostetaan) from nearby elements
-  // But we'll filter for "Myydään" topics primarily
   return topics;
 }
 
@@ -381,6 +390,65 @@ async function productExistsByExternalUrl(url: string): Promise<boolean> {
   return existing.length > 0;
 }
 
+interface ExistingProduct {
+  product: typeof products.$inferSelect;
+  attrs: Record<string, string>;
+  imageRows: (typeof images.$inferSelect)[];
+}
+
+async function getProductByExternalUrl(url: string): Promise<ExistingProduct | null> {
+  const product = await db
+    .select()
+    .from(products)
+    .where(eq(products.externalUrl, url))
+    .limit(1);
+
+  if (product.length === 0) return null;
+
+  const p = product[0];
+
+  // Fetch attributes with keys
+  const attrRows = await db
+    .select({
+      key: attributes.key,
+      value: productAttributes.value,
+      avValue: attributeValues.value,
+    })
+    .from(productAttributes)
+    .innerJoin(attributes, eq(productAttributes.attributeId, attributes.id))
+    .leftJoin(attributeValues, eq(productAttributes.attributeValueId, attributeValues.id))
+    .where(eq(productAttributes.productId, p.id));
+
+  const attrs: Record<string, string> = {};
+  for (const row of attrRows) {
+    const val = row.avValue || row.value;
+    if (val) attrs[row.key] = val;
+  }
+
+  // Fetch images
+  const imageRows = await db
+    .select()
+    .from(images)
+    .where(eq(images.productId, p.id));
+
+  return { product: p, attrs, imageRows };
+}
+
+async function markProductAsSoldByExternalUrl(url: string): Promise<boolean> {
+  const existing = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.externalUrl, url))
+    .limit(1);
+  if (existing.length === 0) return false;
+
+  await db
+    .update(products)
+    .set({ status: "sold", updatedAt: new Date() })
+    .where(eq(products.externalUrl, url));
+  return true;
+}
+
 async function insertProduct(
   listing: ParsedListing,
   authorId: string,
@@ -400,7 +468,7 @@ async function insertProduct(
     location: listing.location,
     categoryId,
     externalUrl: listing.sourceUrl || null,
-    status: "active",
+    status: "public",
     expiresAt,
   });
 
@@ -470,14 +538,133 @@ async function insertProduct(
   return id;
 }
 
+// ─── Update existing product ────────────────────────────────────
+
+async function updateProductFromListing(
+  existing: ExistingProduct,
+  listing: ParsedListing,
+  attrKeyToId: Map<string, string>
+): Promise<boolean> {
+  const { product: p, attrs: existingAttrs, imageRows } = existing;
+  let changed = false;
+
+  // Compare product fields
+  const fieldUpdates: Partial<{ title: string; description: string; price: number; location: string; updatedAt: Date }> = {};
+  if (p.title !== listing.title) fieldUpdates.title = listing.title;
+  if (p.description !== listing.description) fieldUpdates.description = listing.description;
+  if (p.price !== listing.price) fieldUpdates.price = listing.price;
+  if (p.location !== listing.location) fieldUpdates.location = listing.location;
+
+  if (Object.keys(fieldUpdates).length > 0) {
+    fieldUpdates.updatedAt = new Date();
+    await db.update(products).set(fieldUpdates).where(eq(products.id, p.id));
+    changed = true;
+  }
+
+  // Compare attributes
+  const attrsEqual =
+    Object.keys(existingAttrs).length === Object.keys(listing.attributes).length &&
+    Object.entries(listing.attributes).every(([k, v]) => existingAttrs[k] === v);
+
+  if (!attrsEqual) {
+    // Delete old attributes
+    await db.delete(productAttributes).where(eq(productAttributes.productId, p.id));
+
+    // Insert new attributes (same logic as insertProduct)
+    for (const [key, value] of Object.entries(listing.attributes)) {
+      const attributeId = attrKeyToId.get(key);
+      if (!attributeId) {
+        console.warn(`  Attribute key "${key}" not found in DB, skipping`);
+        continue;
+      }
+
+      const avRow = await db
+        .select({ id: attributeValues.id })
+        .from(attributeValues)
+        .where(and(eq(attributeValues.attributeId, attributeId), eq(attributeValues.value, value)))
+        .limit(1);
+
+      if (avRow.length > 0) {
+        await db.insert(productAttributes).values({
+          productId: p.id,
+          attributeId,
+          attributeValueId: avRow[0].id,
+          value: null,
+        });
+      } else {
+        await db.insert(productAttributes).values({
+          productId: p.id,
+          attributeId,
+          attributeValueId: null,
+          value,
+        });
+      }
+    }
+    changed = true;
+  }
+
+  // Compare images by originalName
+  const existingOriginalNames = imageRows.map((img) => img.originalName).sort();
+  const newOriginalNames = listing.imageUrls
+    .map((url) => url.split("/").pop()?.split("?")[0] || "")
+    .sort();
+
+  const imagesEqual =
+    existingOriginalNames.length === newOriginalNames.length &&
+    existingOriginalNames.every((name, i) => name === newOriginalNames[i]);
+
+  if (!imagesEqual) {
+    // Delete old image files from disk and DB
+    for (const img of imageRows) {
+      deleteImageFiles(img.filename);
+    }
+    await db.delete(images).where(eq(images.productId, p.id));
+
+    // Download and process new images
+    for (let i = 0; i < listing.imageUrls.length; i++) {
+      const imgUrl = listing.imageUrls[i];
+      try {
+        await sleep(FETCH_DELAY_MS);
+        const imgData = await fetchImageBuffer(imgUrl);
+        if (!imgData) {
+          console.warn(`    Image ${i + 1} failed to download: ${imgUrl}`);
+          continue;
+        }
+
+        const originalName = imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
+        const processed = await processImage(imgData.buffer, originalName, imgData.mimeType);
+
+        await db.insert(images).values({
+          productId: p.id,
+          filename: processed.filename,
+          originalName: processed.originalName,
+          mimeType: processed.mimeType,
+          width: processed.width,
+          height: processed.height,
+          sizeBytes: processed.sizeBytes,
+          sortOrder: i,
+        });
+
+        console.log(`    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`);
+      } catch (err) {
+        console.warn(`    Image ${i + 1} processing failed: ${err}`);
+      }
+    }
+    changed = true;
+  }
+
+  return changed;
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
   const limitArg = args.find((a) => a.startsWith("--limit="));
   const limit = limitArg ? parseInt(limitArg.split("=")[1], 10) : Infinity;
+  const skipUpdates = args.includes("--skip-updates");
 
-  console.log(`=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}\n`);
+  console.log(`=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}${skipUpdates ? " (skip-updates)" : ""}\n`);
 
   const authorId = await ensureImporterUser();
   const attrKeyToId = await getAttributeKeyToId();
@@ -485,6 +672,9 @@ async function main() {
   let totalImported = 0;
   let totalSkipped = 0;
   let totalFailed = 0;
+  let totalMarkedSold = 0;
+  let totalUpdated = 0;
+  let totalUnchanged = 0;
 
   for (const { url, categoryId } of CATEGORY_URLS) {
     console.log(`\nFetching category: ${url}`);
@@ -503,9 +693,33 @@ async function main() {
     for (const topic of topics) {
       if (totalImported >= limit) break;
 
-      // Check for duplicate by external URL
-      if (await productExistsByExternalUrl(topic.url)) {
-        console.log(`  SKIP (duplicate): ${topic.title}`);
+      // Filter by listing tag
+      if (topic.tag === "Myyty") {
+        // Check if this sold listing exists in our DB and mark it as sold
+        if (await productExistsByExternalUrl(topic.url)) {
+          const updated = await markProductAsSoldByExternalUrl(topic.url);
+          if (updated) {
+            console.log(`  MARKED SOLD: ${topic.title}`);
+            totalMarkedSold++;
+          }
+        } else {
+          console.log(`  SKIP (sold, not in DB): ${topic.title}`);
+          totalSkipped++;
+        }
+        continue;
+      }
+
+      if (topic.tag !== "Myydään" && topic.tag !== "") {
+        console.log(`  SKIP (tag: ${topic.tag}): ${topic.title}`);
+        totalSkipped++;
+        continue;
+      }
+
+      // Check if product already exists
+      const existing = await getProductByExternalUrl(topic.url);
+
+      if (existing && skipUpdates) {
+        console.log(`  SKIP (exists, updates disabled): ${topic.title}`);
         totalSkipped++;
         continue;
       }
@@ -532,21 +746,41 @@ async function main() {
 
       listing.sourceUrl = topic.url;
 
-      // Insert into DB
-      try {
-        const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
-        console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`);
-        totalImported++;
-      } catch (err) {
-        console.error(`  FAILED to insert: ${listing.title} - ${err}`);
-        totalFailed++;
+      if (existing) {
+        // Update existing product if changed
+        try {
+          const wasUpdated = await updateProductFromListing(existing, listing, attrKeyToId);
+          if (wasUpdated) {
+            console.log(`  UPDATED: ${listing.title}`);
+            totalUpdated++;
+          } else {
+            console.log(`  UNCHANGED: ${listing.title}`);
+            totalUnchanged++;
+          }
+        } catch (err) {
+          console.error(`  FAILED to update: ${listing.title} - ${err}`);
+          totalFailed++;
+        }
+      } else {
+        // Insert new product
+        try {
+          const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
+          console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`);
+          totalImported++;
+        } catch (err) {
+          console.error(`  FAILED to insert: ${listing.title} - ${err}`);
+          totalFailed++;
+        }
       }
     }
   }
 
   console.log("\n=== Import Summary ===");
   console.log(`  Imported: ${totalImported}`);
-  console.log(`  Skipped (duplicates): ${totalSkipped}`);
+  console.log(`  Updated: ${totalUpdated}`);
+  console.log(`  Unchanged: ${totalUnchanged}`);
+  console.log(`  Marked sold: ${totalMarkedSold}`);
+  console.log(`  Skipped: ${totalSkipped}`);
   console.log(`  Failed: ${totalFailed}`);
 }
 

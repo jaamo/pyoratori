@@ -6,7 +6,7 @@ import type { SearchFilters, ProductWithDetails, ProductWithImages } from "@/typ
 
 function checkExpiry<T extends { status: string; expiresAt: Date; id: string }>(product: T): T {
   if (
-    product.status === PRODUCT_STATUS.ACTIVE &&
+    product.status === PRODUCT_STATUS.PUBLIC &&
     product.expiresAt < new Date()
   ) {
     // Mark as expired on read
@@ -84,7 +84,7 @@ export async function getProductById(
 export async function searchProducts(
   filters: SearchFilters
 ): Promise<{ products: ProductWithImages[]; total: number }> {
-  const conditions = [eq(products.status, PRODUCT_STATUS.ACTIVE)];
+  const conditions = [eq(products.status, PRODUCT_STATUS.PUBLIC)];
 
   // Only show non-expired
   conditions.push(gte(products.expiresAt, new Date()));
@@ -197,7 +197,7 @@ export async function getLatestProducts(
     .from(products)
     .where(
       and(
-        eq(products.status, PRODUCT_STATUS.ACTIVE),
+        eq(products.status, PRODUCT_STATUS.PUBLIC),
         gte(products.expiresAt, new Date())
       )
     )

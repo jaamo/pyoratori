@@ -13,7 +13,7 @@ type ProfileContentProps = {
 };
 
 export function ProfileContent({ products }: ProfileContentProps) {
-  const active = products.filter((p) => p.status === PRODUCT_STATUS.ACTIVE);
+  const active = products.filter((p) => p.status === PRODUCT_STATUS.PUBLIC);
   const sold = products.filter((p) => p.status === PRODUCT_STATUS.SOLD);
   const expired = products.filter((p) => p.status === PRODUCT_STATUS.EXPIRED);
 

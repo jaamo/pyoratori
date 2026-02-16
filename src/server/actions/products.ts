@@ -306,7 +306,7 @@ export async function reactivateProduct(productId: string) {
   await db
     .update(products)
     .set({
-      status: PRODUCT_STATUS.ACTIVE,
+      status: PRODUCT_STATUS.PUBLIC,
       expiresAt,
       updatedAt: new Date(),
     })

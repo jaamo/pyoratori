@@ -122,7 +122,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <div>
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-2xl font-bold">{product.title}</h1>
-              {product.status !== PRODUCT_STATUS.ACTIVE && (
+              {product.status !== PRODUCT_STATUS.PUBLIC && (
                 <Badge
                   variant={
                     product.status === PRODUCT_STATUS.SOLD
@@ -212,7 +212,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
                     Muokkaa
                   </Link>
                 </Button>
-                {product.status === PRODUCT_STATUS.ACTIVE && (
+                {product.status === PRODUCT_STATUS.PUBLIC && (
                   <Button variant="outline" onClick={handleMarkAsSold}>
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Merkitse myydyksi

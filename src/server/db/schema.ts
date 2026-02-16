@@ -116,7 +116,7 @@ export const products = sqliteTable("products", {
     .notNull()
     .references(() => categories.id),
   externalUrl: text("externalUrl"),
-  status: text("status").notNull().default("active"),
+  status: text("status").notNull().default("public"),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
