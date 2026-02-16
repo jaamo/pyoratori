@@ -43,6 +43,11 @@ export function ProductCard({ product }: ProductCardProps) {
               Vanhentunut
             </Badge>
           )}
+          {product.externalUrl && (
+            <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              Fillaritori
+            </Badge>
+          )}
         </div>
         <CardContent className="p-3">
           <h3 className="line-clamp-2 text-sm font-medium leading-tight">

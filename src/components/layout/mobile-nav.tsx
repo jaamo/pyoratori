@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, Plus, MessageSquare, User, LogOut, Search } from "lucide-react";
+import { X, Plus, MessageSquare, User, LogOut, Home, Bike, BookOpen } from "lucide-react";
 import { useEffect } from "react";
 
 type MobileNavProps = {
@@ -47,12 +47,28 @@ export function MobileNav({
 
         <nav className="flex flex-col gap-2">
           <Link
+            href="/"
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+            onClick={onClose}
+          >
+            <Home className="h-4 w-4" />
+            Etusivu
+          </Link>
+          <Link
             href="/haku"
             className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
             onClick={onClose}
           >
-            <Search className="h-4 w-4" />
-            Selaa ilmoituksia
+            <Bike className="h-4 w-4" />
+            Pyörät
+          </Link>
+          <Link
+            href="/tietopankki"
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+            onClick={onClose}
+          >
+            <BookOpen className="h-4 w-4" />
+            Tietopankki
           </Link>
 
           {isLoggedIn ? (

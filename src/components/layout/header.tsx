@@ -29,10 +29,22 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
 
         <nav className="hidden md:flex md:flex-1 md:items-center md:gap-6">
           <Link
+            href="/"
+            className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+          >
+            Etusivu
+          </Link>
+          <Link
             href="/haku"
             className="text-sm font-medium text-white/70 transition-colors hover:text-white"
           >
-            Selaa ilmoituksia
+            Pyörät
+          </Link>
+          <Link
+            href="/tietopankki"
+            className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+          >
+            Tietopankki
           </Link>
         </nav>
 
