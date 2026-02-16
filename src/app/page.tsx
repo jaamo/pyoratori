@@ -123,27 +123,27 @@ export default async function HomePage() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
               <Bike className="h-7 w-7 text-[#642ca9]" />
             </div>
-            <h3 className="text-lg font-semibold">Laaja valikoima</h3>
+            <h3 className="text-lg font-semibold">Tehokas haku</h3>
             <p className="text-muted-foreground text-sm">
-              Tuhansia pyöriä gravel-pyöristä maantiepyöriin ja sähköpyöriin. Löydä juuri sinulle sopiva pyörä.
+              Hakukone, joka on suunniteltu pyörien etsimiseen. Ei enää ilmoitusten kahlailua ja foorumeilla päivystämistä.
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
               <Search className="h-7 w-7 text-[#642ca9]" />
             </div>
-            <h3 className="text-lg font-semibold">Helppo haku</h3>
+            <h3 className="text-lg font-semibold">Paras paikka myydä</h3>
             <p className="text-muted-foreground text-sm">
-              Suodata merkillä, runkokoolla, hinnalla ja kymmenillä muilla ominaisuuksilla. Löydät nopeasti mitä etsit.
+              Jätä pyöräsi myyntiin sivustolle. Tehokas haku takaa, että pyörä löytää oikean ostajan nopeasti.
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#642ca9]/10">
               <Shield className="h-7 w-7 text-[#642ca9]" />
             </div>
-            <h3 className="text-lg font-semibold">Turvallinen kauppapaikka</h3>
+            <h3 className="text-lg font-semibold">Kattava valikoima</h3>
             <p className="text-muted-foreground text-sm">
-              Rekisteröityneet käyttäjät, sisäänrakennettu viestintä ja selkeät ilmoitukset turvalliseen kaupankäyntiin.
+              Pyoratori.com listaa uusia ja käytettyjä pyöriä myös muista kaupoista ja markkinapaikoista. Kaikki Suomen pyörät yhdessä paikassa.
             </p>
           </div>
         </div>
