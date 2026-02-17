@@ -41,7 +41,7 @@ export function DynamicAttributes({
                 value={(values[attr.key] as string) || ""}
                 onValueChange={(v) => onChange(attr.key, v)}
               >
-                <SelectTrigger id={attr.key}>
+                <SelectTrigger id={attr.key} className="w-full">
                   <SelectValue placeholder="Valitse..." />
                 </SelectTrigger>
                 <SelectContent>

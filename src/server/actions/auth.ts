@@ -6,6 +6,8 @@ import { users, passwordResetTokens } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { registerSchema, passwordResetRequestSchema, passwordResetSchema } from "@/lib/validators";
 import { v4 as uuid } from "uuid";
+import { writeFileSync } from "fs";
+import { join } from "path";
 
 export async function register(formData: FormData) {
   const raw = {
@@ -55,6 +57,8 @@ export async function requestPasswordReset(formData: FormData) {
 
   // Always return success to prevent email enumeration
   if (!user) {
+    const logPath = join(process.cwd(), "data/password-reset.log");
+    writeFileSync(logPath, `[${new Date().toISOString()}] No user found for: ${result.data.email}\n`, { flag: "a" });
     return { success: true };
   }
 
@@ -67,10 +71,11 @@ export async function requestPasswordReset(formData: FormData) {
     expires,
   });
 
-  // V1: Log reset link to console (email integration later)
-  console.log(
-    `\n[PASSWORD RESET] Link for ${user.email}: http://localhost:3000/unohtunut-salasana?token=${token}\n`
-  );
+  // V1: Log reset link to file (email integration later)
+  const resetUrl = `http://localhost:3000/unohtunut-salasana?token=${token}`;
+  const logLine = `[${new Date().toISOString()}] ${user.email}: ${resetUrl}\n`;
+  const logPath = join(process.cwd(), "data/password-reset.log");
+  writeFileSync(logPath, logLine, { flag: "a" });
 
   return { success: true };
 }

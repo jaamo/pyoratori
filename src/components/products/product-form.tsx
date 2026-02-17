@@ -5,15 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-  SelectLabel,
-} from "@/components/ui/select";
 import { DynamicAttributes } from "./dynamic-attributes";
 import { ImageUpload } from "./image-upload";
 import {
@@ -208,48 +199,48 @@ export function ProductForm({ product }: ProductFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Step indicator */}
       <nav aria-label="Lomakkeen vaiheet" className="mb-8">
-        <ol className="flex items-center">
+        <div className="relative flex justify-between">
+          {/* Connector lines behind circles */}
+          <div className="absolute top-4 right-4 left-4 flex -translate-y-1/2">
+            {STEPS.slice(0, -1).map((_, i) => (
+              <div
+                key={i}
+                className={`h-0.5 flex-1 ${
+                  i < currentStep ? "bg-primary" : "bg-muted"
+                }`}
+              />
+            ))}
+          </div>
+          {/* Steps */}
           {STEPS.map((step, i) => (
-            <li
-              key={i}
-              className={`flex items-center ${i < STEPS.length - 1 ? "flex-1" : ""}`}
-            >
-              <div className="flex flex-col items-center">
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors ${
-                    i < currentStep
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : i === currentStep
-                        ? "border-primary bg-background text-primary"
-                        : "border-muted bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {i < currentStep ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span
-                  className={`mt-1 text-xs ${
-                    i <= currentStep
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {step.label}
-                </span>
+            <div key={i} className="relative flex flex-col items-center">
+              <div
+                className={`z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors ${
+                  i < currentStep
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : i === currentStep
+                      ? "border-primary bg-background text-primary"
+                      : "border-muted bg-muted text-muted-foreground"
+                }`}
+              >
+                {i < currentStep ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  i + 1
+                )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`mx-2 h-0.5 flex-1 ${
-                    i < currentStep ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-              )}
-            </li>
+              <span
+                className={`mt-1 text-xs ${
+                  i <= currentStep
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
           ))}
-        </ol>
+        </div>
       </nav>
 
       {error && (
@@ -266,29 +257,27 @@ export function ProductForm({ product }: ProductFormProps) {
 
       {/* Step 0: Category */}
       {currentStep === 0 && (
-        <div className="space-y-2">
-          <Label>Kategoria</Label>
-          <Select value={categoryId} onValueChange={handleCategoryChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Valitse kategoria..." />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryOptions.map((group, i) => (
-                <SelectGroup key={i}>
-                  <SelectLabel>
-                    {group.parentName
-                      ? `${group.groupName} / ${group.parentName}`
-                      : group.groupName}
-                  </SelectLabel>
-                  {group.items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap gap-2">
+          {categoryOptions.flatMap((group) =>
+            group.items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  handleCategoryChange(item.id);
+                  setStepError("");
+                  setCurrentStep(1);
+                }}
+                className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  categoryId === item.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border hover:border-primary hover:bg-accent"
+                }`}
+              >
+                {item.name}
+              </button>
+            ))
+          )}
         </div>
       )}
 
@@ -507,13 +496,13 @@ export function ProductForm({ product }: ProductFormProps) {
           </Button>
         )}
         <div className="flex-1" />
-        {currentStep < 3 && (
+        {currentStep > 0 && currentStep < 3 && (
           <Button type="button" onClick={goNext}>
             Seuraava
           </Button>
         )}
         {currentStep === 3 && (
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading
               ? product
                 ? "P\u00e4ivitet\u00e4\u00e4n..."
