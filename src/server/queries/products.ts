@@ -4,16 +4,15 @@ import { eq, desc, asc, and, like, gte, lte, sql, or, inArray } from "drizzle-or
 import { PRODUCT_STATUS, PRODUCT_EXPIRY_DAYS, ITEMS_PER_PAGE } from "@/lib/constants";
 import type { SearchFilters, ProductWithDetails, ProductWithImages } from "@/types";
 
-function checkExpiry<T extends { status: string; expiresAt: Date; id: string }>(product: T): T {
+async function checkExpiry<T extends { status: string; expiresAt: Date; id: string }>(product: T): Promise<T> {
   if (
     product.status === PRODUCT_STATUS.PUBLIC &&
     product.expiresAt < new Date()
   ) {
     // Mark as expired on read
-    db.update(products)
+    await db.update(products)
       .set({ status: PRODUCT_STATUS.EXPIRED })
-      .where(eq(products.id, product.id))
-      .run();
+      .where(eq(products.id, product.id));
     return { ...product, status: PRODUCT_STATUS.EXPIRED as T["status"] };
   }
   return product;
@@ -53,7 +52,7 @@ export async function getProductById(
 
   if (!product) return null;
 
-  const checked = checkExpiry(product);
+  const checked = await checkExpiry(product);
 
   const [productImages, attrsMap, author, category] = await Promise.all([
     db.query.images.findMany({
@@ -233,7 +232,7 @@ export async function getProductsByUser(
 
   const productsWithImages: ProductWithImages[] = await Promise.all(
     results.map(async (p) => {
-      const checked = checkExpiry(p);
+      const checked = await checkExpiry(p);
       const productImages = await db.query.images.findMany({
         where: eq(images.productId, p.id),
         orderBy: [images.sortOrder],
