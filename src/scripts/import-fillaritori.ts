@@ -101,12 +101,13 @@ function parseTopicLinks(html: string): Array<{ url: string; title: string; tag:
       if (gpTag !== "h4") return;
     }
 
-    // Extract tag from nearby ipsBadge element (e.g. "Myydään", "Myyty")
+    // Extract tag from nearby badge element (e.g. "Myydään", "Myyty", "Ostetaan")
     // Walk up to the topic row container and look for the badge
+    // Note: "Myydään"/"Myyty" use class="ipsBadge", others use class="ipsTag_prefix"
     let tag = "";
     const topicRow = $(el).closest("li, tr, [data-role='topic']");
     if (topicRow.length) {
-      const badge = topicRow.find("a.ipsBadge span").first();
+      const badge = topicRow.find("a.ipsBadge span, a.ipsTag_prefix span").first();
       if (badge.length) {
         tag = badge.text().trim();
       }

@@ -8,7 +8,7 @@ import {
   attributes,
   attributeValues,
 } from "../server/db/schema";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, or, isNull, ne } from "drizzle-orm";
 import { getAttributesForCategory } from "../lib/categories";
 import { classifyProduct } from "../lib/classifier";
 
@@ -64,7 +64,9 @@ async function saveAttributes(
 }
 
 async function main() {
-  // Load all imported products (those with externalUrl)
+  // Load imported products that need classification:
+  // - classifiedAt is null (never classified), OR
+  // - classifiedAt differs from updatedAt (data changed since last classification)
   const importedProducts = await db
     .select({
       id: products.id,
@@ -72,9 +74,18 @@ async function main() {
       description: products.description,
       categoryId: products.categoryId,
       externalUrl: products.externalUrl,
+      updatedAt: products.updatedAt,
     })
     .from(products)
-    .where(isNotNull(products.externalUrl));
+    .where(
+      and(
+        isNotNull(products.externalUrl),
+        or(
+          isNull(products.classifiedAt),
+          ne(products.classifiedAt, products.updatedAt)
+        )
+      )
+    );
 
   if (importedProducts.length === 0) {
     console.log("No imported products found (no products with externalUrl).");
@@ -120,6 +131,13 @@ async function main() {
 
       // Save to DB
       const saved = await saveAttributes(p.id, detected, attrKeyToId);
+
+      // Mark as classified by storing updatedAt into classifiedAt
+      await db
+        .update(products)
+        .set({ classifiedAt: p.updatedAt })
+        .where(eq(products.id, p.id));
+
       console.log(`  Saved ${saved} attributes: ${keys.join(", ")}`);
       totalClassified++;
     } catch (err) {

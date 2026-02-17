@@ -124,6 +124,7 @@ export const products = sqliteTable("products", {
   updatedAt: integer("updatedAt", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
+  classifiedAt: integer("classifiedAt", { mode: "timestamp" }),
 });
 
 export const productAttributes = sqliteTable("product_attributes", {
