@@ -1,6 +1,13 @@
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
-import { users, products, productAttributes, attributes, attributeValues, images } from "../server/db/schema";
+import {
+  users,
+  products,
+  productAttributes,
+  attributes,
+  attributeValues,
+  images,
+} from "../server/db/schema";
 import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
 import { processImage, deleteImageFiles } from "../lib/images";
@@ -11,7 +18,94 @@ const IMPORTER_EMAIL = "importer@fillaritori.com";
 const IMPORTER_NAME = "Fillaritori Import";
 
 const CATEGORY_URLS: Array<{ url: string; categoryId: string }> = [
-  { url: "https://www.fillaritori.com/forum/54-maantie/", categoryId: "maantie" },
+  {
+    url: "https://www.fillaritori.com/forum/54-maantie/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/69-triathlonaika-ajo/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/55-cyclocrossgravel/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/56-hybridfitness/",
+    categoryId: "maantie",
+  },
+  { url: "https://www.fillaritori.com/forum/99-rata/", categoryId: "maantie" },
+  {
+    url: "https://www.fillaritori.com/forum/57-joustamattomat/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/70-fatbiket/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/58-etujousitetut/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/72-t%C3%A4ysjousitetut-80-125mm/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/74-t%C3%A4ysjousitetut-130-155mm/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/75-t%C3%A4ysjousitetut-160-185mm/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/112-t%C3%A4ysjousitetut-190-210mm/",
+    categoryId: "maantie",
+  },
+  { url: "https://www.fillaritori.com/forum/5-lasten/", categoryId: "maantie" },
+  {
+    url: "https://www.fillaritori.com/forum/63-yksivaihteiset/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/61-napavaihteiset/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/62-ketjuvaihteiset/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/52-fiksit/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/60-vintageretro/",
+    categoryId: "maantie",
+  },
+  { url: "https://www.fillaritori.com/forum/51-bmx/", categoryId: "maantie" },
+  {
+    url: "https://www.fillaritori.com/forum/79-dirtstreet/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/77-tavarapy%C3%B6r%C3%A4t/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/53-muille-osastoille-sopimattomat/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/84-tasamaa/",
+    categoryId: "maantie",
+  },
+  {
+    url: "https://www.fillaritori.com/forum/85-maasto/",
+    categoryId: "maantie",
+  },
+  { url: "https://www.fillaritori.com/forum/86-muut/", categoryId: "maantie" },
 ];
 
 const FETCH_DELAY_MS = 1000; // be polite to the server
@@ -51,13 +145,25 @@ async function fetchPage(url: string): Promise<string> {
 function detectImageMime(buf: Buffer): string | null {
   if (buf.length < 12) return null;
   if (buf[0] === 0xff && buf[1] === 0xd8) return "image/jpeg";
-  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
-  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
-      buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return "image/webp";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47)
+    return "image/png";
+  if (
+    buf[0] === 0x52 &&
+    buf[1] === 0x49 &&
+    buf[2] === 0x46 &&
+    buf[3] === 0x46 &&
+    buf[8] === 0x57 &&
+    buf[9] === 0x45 &&
+    buf[10] === 0x42 &&
+    buf[11] === 0x50
+  )
+    return "image/webp";
   return null;
 }
 
-async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+async function fetchImageBuffer(
+  url: string,
+): Promise<{ buffer: Buffer; mimeType: string } | null> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -79,7 +185,9 @@ async function fetchImageBuffer(url: string): Promise<{ buffer: Buffer; mimeType
 
 // ─── Parse topic links from category page ───────────────────────
 
-function parseTopicLinks(html: string): Array<{ url: string; title: string; tag: string }> {
+function parseTopicLinks(
+  html: string,
+): Array<{ url: string; title: string; tag: string }> {
   const $ = cheerio.load(html);
   const topics: Array<{ url: string; title: string; tag: string }> = [];
 
@@ -94,7 +202,11 @@ function parseTopicLinks(html: string): Array<{ url: string; title: string; tag:
     const parent = $(el).parent();
     const parentTag = parent.prop("tagName")?.toLowerCase();
     // Topic titles are typically in h4 elements or similar heading elements
-    if (parentTag !== "h4" && parentTag !== "span" && !parent.hasClass("ipsType_break")) {
+    if (
+      parentTag !== "h4" &&
+      parentTag !== "span" &&
+      !parent.hasClass("ipsType_break")
+    ) {
       // Also check grandparent
       const grandparent = parent.parent();
       const gpTag = grandparent.prop("tagName")?.toLowerCase();
@@ -107,7 +219,9 @@ function parseTopicLinks(html: string): Array<{ url: string; title: string; tag:
     let tag = "";
     const topicRow = $(el).closest("li, tr, [data-role='topic']");
     if (topicRow.length) {
-      const badge = topicRow.find("a.ipsBadge span, a.ipsTag_prefix span").first();
+      const badge = topicRow
+        .find("a.ipsBadge span, a.ipsTag_prefix span")
+        .first();
       if (badge.length) {
         tag = badge.text().trim();
       }
@@ -121,7 +235,10 @@ function parseTopicLinks(html: string): Array<{ url: string; title: string; tag:
 
 // ─── Parse first post content from topic page ───────────────────
 
-function parseFirstPost(html: string, topicTitle: string): ParsedListing | null {
+function parseFirstPost(
+  html: string,
+  topicTitle: string,
+): ParsedListing | null {
   const $ = cheerio.load(html);
 
   // Find the first post content - Invision Community uses various selectors
@@ -146,7 +263,9 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
   if (!postContent) {
     const article = $("article").first();
     if (article.length) {
-      const contentDiv = article.find('[data-role="commentContent"], .ipsType_normal, .ipsContained').first();
+      const contentDiv = article
+        .find('[data-role="commentContent"], .ipsType_normal, .ipsContained')
+        .first();
       if (contentDiv.length) {
         postContent = contentDiv.html() || "";
       }
@@ -157,7 +276,11 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
   if (!postContent) {
     $("div, td").each((_, el) => {
       const text = $(el).html() || "";
-      if (text.includes("Merkki:") || text.includes("Hinta:") || text.includes("Paikkakunta:")) {
+      if (
+        text.includes("Merkki:") ||
+        text.includes("Hinta:") ||
+        text.includes("Paikkakunta:")
+      ) {
         if (text.length > postContent.length) {
           postContent = text;
         }
@@ -177,7 +300,10 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
     const href = $(el).attr("href");
     if (!href) return;
     // Only match hrefs that point directly to cdn2 (not embedded in query params)
-    if (href.startsWith("//cdn2.fillaritori.com/") || href.startsWith("https://cdn2.fillaritori.com/")) {
+    if (
+      href.startsWith("//cdn2.fillaritori.com/") ||
+      href.startsWith("https://cdn2.fillaritori.com/")
+    ) {
       imageUrl = href.startsWith("//") ? `https:${href}` : href;
     }
   });
@@ -188,7 +314,10 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
       if (imageUrl) return;
       const src = postEl(el).attr("src");
       if (!src) return;
-      if (src.startsWith("//cdn2.fillaritori.com/") || src.startsWith("https://cdn2.fillaritori.com/")) {
+      if (
+        src.startsWith("//cdn2.fillaritori.com/") ||
+        src.startsWith("https://cdn2.fillaritori.com/")
+      ) {
         imageUrl = src.startsWith("//") ? `https:${src}` : src;
       }
     });
@@ -212,11 +341,18 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
 
   // Extract location
   const location =
-    fields["Paikkakunta"] || fields["paikkakunta"] || titleParsed.location || "Ei tiedossa";
+    fields["Paikkakunta"] ||
+    fields["paikkakunta"] ||
+    titleParsed.location ||
+    "Ei tiedossa";
 
   // Extract description
   const description =
-    fields["Kuvaus"] || fields["kuvaus"] || fields["Lyhyt kuvaus"] || fields["lyhyt kuvaus"] || textContent.slice(0, 2000);
+    fields["Kuvaus"] ||
+    fields["kuvaus"] ||
+    fields["Lyhyt kuvaus"] ||
+    fields["lyhyt kuvaus"] ||
+    textContent.slice(0, 2000);
 
   // Build attributes
   const attrs: Record<string, string> = {};
@@ -224,7 +360,8 @@ function parseFirstPost(html: string, topicTitle: string): ParsedListing | null 
   const brand = fields["Merkki"] || fields["merkki"] || titleParsed.brand;
   if (brand) attrs["bikeBrand"] = mapBrand(brand);
 
-  const frameSize = fields["Rungon koko"] || fields["rungon koko"] || titleParsed.frameSize;
+  const frameSize =
+    fields["Rungon koko"] || fields["rungon koko"] || titleParsed.frameSize;
   if (frameSize) attrs["frameSize"] = frameSize;
 
   return {
@@ -267,14 +404,24 @@ function htmlToText(html: string): string {
 function parseFields(text: string): Record<string, string> {
   const fields: Record<string, string> = {};
   const fieldLabels = [
-    "Merkki", "Malli", "Lyhyt kuvaus", "Rungon koko", "Kuvaus",
-    "Hinta", "Paikkakunta", "Maakunta", "Yhteystiedot",
-    "Vuosimalli", "Materiaali", "Kunto",
+    "Merkki",
+    "Malli",
+    "Lyhyt kuvaus",
+    "Rungon koko",
+    "Kuvaus",
+    "Hinta",
+    "Paikkakunta",
+    "Maakunta",
+    "Yhteystiedot",
+    "Vuosimalli",
+    "Materiaali",
+    "Kunto",
   ];
   // Match field labels with optional leading whitespace and flexible separator (colon + any space/nbsp)
   const labelPattern = fieldLabels.join("|");
   const fieldPattern = new RegExp(
-    `(?:^|\\n)\\s*(${labelPattern})\\s*[:：]\\s*(.+)`, "gi"
+    `(?:^|\\n)\\s*(${labelPattern})\\s*[:：]\\s*(.+)`,
+    "gi",
   );
 
   let match;
@@ -284,7 +431,10 @@ function parseFields(text: string): Record<string, string> {
     // For multi-line fields like Kuvaus, grab until the next field label
     if (key.toLowerCase() === "kuvaus") {
       const rest = text.slice(match.index + match[0].length);
-      const nextFieldPattern = new RegExp(`\\n\\s*(${labelPattern})\\s*[:：]`, "i");
+      const nextFieldPattern = new RegExp(
+        `\\n\\s*(${labelPattern})\\s*[:：]`,
+        "i",
+      );
       const nextFieldIdx = rest.search(nextFieldPattern);
       if (nextFieldIdx > 0) {
         value = (value + rest.slice(0, nextFieldIdx)).trim();
@@ -296,7 +446,11 @@ function parseFields(text: string): Record<string, string> {
   return fields;
 }
 
-function parseTitleFields(title: string): { brand: string; frameSize: string; location: string } {
+function parseTitleFields(title: string): {
+  brand: string;
+  frameSize: string;
+  location: string;
+} {
   // Typical title format: "Brand Model description, size, location"
   // e.g. "Colnago Consept Aero maantiepyörä, 52, Järvenpää"
   const parts = title.split(",").map((p) => p.trim());
@@ -343,8 +497,19 @@ function parsePrice(priceStr: string): number | null {
 }
 
 const KNOWN_BRANDS = [
-  "Bianchi", "BMC", "Cannondale", "FOCUS", "Giant", "Lapierre", "Liv",
-  "Orbea", "SCOTT", "Simplon", "Specialized", "Trek", "Wilier",
+  "Bianchi",
+  "BMC",
+  "Cannondale",
+  "FOCUS",
+  "Giant",
+  "Lapierre",
+  "Liv",
+  "Orbea",
+  "SCOTT",
+  "Simplon",
+  "Specialized",
+  "Trek",
+  "Wilier",
 ];
 
 function mapBrand(brand: string): string {
@@ -378,7 +543,9 @@ async function ensureImporterUser(): Promise<string> {
 }
 
 async function getAttributeKeyToId(): Promise<Map<string, string>> {
-  const rows = await db.select({ id: attributes.id, key: attributes.key }).from(attributes);
+  const rows = await db
+    .select({ id: attributes.id, key: attributes.key })
+    .from(attributes);
   return new Map(rows.map((r) => [r.key, r.id]));
 }
 
@@ -397,7 +564,9 @@ interface ExistingProduct {
   imageRows: (typeof images.$inferSelect)[];
 }
 
-async function getProductByExternalUrl(url: string): Promise<ExistingProduct | null> {
+async function getProductByExternalUrl(
+  url: string,
+): Promise<ExistingProduct | null> {
   const product = await db
     .select()
     .from(products)
@@ -417,7 +586,10 @@ async function getProductByExternalUrl(url: string): Promise<ExistingProduct | n
     })
     .from(productAttributes)
     .innerJoin(attributes, eq(productAttributes.attributeId, attributes.id))
-    .leftJoin(attributeValues, eq(productAttributes.attributeValueId, attributeValues.id))
+    .leftJoin(
+      attributeValues,
+      eq(productAttributes.attributeValueId, attributeValues.id),
+    )
     .where(eq(productAttributes.productId, p.id));
 
   const attrs: Record<string, string> = {};
@@ -454,11 +626,13 @@ async function insertProduct(
   listing: ParsedListing,
   authorId: string,
   categoryId: string,
-  attrKeyToId: Map<string, string>
+  attrKeyToId: Map<string, string>,
 ): Promise<string> {
   const id = crypto.randomUUID();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + PRODUCT_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(
+    now.getTime() + PRODUCT_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+  );
 
   await db.insert(products).values({
     id,
@@ -484,8 +658,13 @@ async function insertProduct(
         continue;
       }
 
-      const originalName = imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
-      const processed = await processImage(imgData.buffer, originalName, imgData.mimeType);
+      const originalName =
+        imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
+      const processed = await processImage(
+        imgData.buffer,
+        originalName,
+        imgData.mimeType,
+      );
 
       await db.insert(images).values({
         productId: id,
@@ -498,7 +677,9 @@ async function insertProduct(
         sortOrder: i,
       });
 
-      console.log(`    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`);
+      console.log(
+        `    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`,
+      );
     } catch (err) {
       console.warn(`    Image ${i + 1} processing failed: ${err}`);
     }
@@ -516,7 +697,12 @@ async function insertProduct(
     const avRow = await db
       .select({ id: attributeValues.id })
       .from(attributeValues)
-      .where(and(eq(attributeValues.attributeId, attributeId), eq(attributeValues.value, value)))
+      .where(
+        and(
+          eq(attributeValues.attributeId, attributeId),
+          eq(attributeValues.value, value),
+        ),
+      )
       .limit(1);
 
     if (avRow.length > 0) {
@@ -544,15 +730,22 @@ async function insertProduct(
 async function updateProductFromListing(
   existing: ExistingProduct,
   listing: ParsedListing,
-  attrKeyToId: Map<string, string>
+  attrKeyToId: Map<string, string>,
 ): Promise<boolean> {
   const { product: p, attrs: existingAttrs, imageRows } = existing;
   let changed = false;
 
   // Compare product fields
-  const fieldUpdates: Partial<{ title: string; description: string; price: number; location: string; updatedAt: Date }> = {};
+  const fieldUpdates: Partial<{
+    title: string;
+    description: string;
+    price: number;
+    location: string;
+    updatedAt: Date;
+  }> = {};
   if (p.title !== listing.title) fieldUpdates.title = listing.title;
-  if (p.description !== listing.description) fieldUpdates.description = listing.description;
+  if (p.description !== listing.description)
+    fieldUpdates.description = listing.description;
   if (p.price !== listing.price) fieldUpdates.price = listing.price;
   if (p.location !== listing.location) fieldUpdates.location = listing.location;
 
@@ -564,12 +757,17 @@ async function updateProductFromListing(
 
   // Compare attributes
   const attrsEqual =
-    Object.keys(existingAttrs).length === Object.keys(listing.attributes).length &&
-    Object.entries(listing.attributes).every(([k, v]) => existingAttrs[k] === v);
+    Object.keys(existingAttrs).length ===
+      Object.keys(listing.attributes).length &&
+    Object.entries(listing.attributes).every(
+      ([k, v]) => existingAttrs[k] === v,
+    );
 
   if (!attrsEqual) {
     // Delete old attributes
-    await db.delete(productAttributes).where(eq(productAttributes.productId, p.id));
+    await db
+      .delete(productAttributes)
+      .where(eq(productAttributes.productId, p.id));
 
     // Insert new attributes (same logic as insertProduct)
     for (const [key, value] of Object.entries(listing.attributes)) {
@@ -582,7 +780,12 @@ async function updateProductFromListing(
       const avRow = await db
         .select({ id: attributeValues.id })
         .from(attributeValues)
-        .where(and(eq(attributeValues.attributeId, attributeId), eq(attributeValues.value, value)))
+        .where(
+          and(
+            eq(attributeValues.attributeId, attributeId),
+            eq(attributeValues.value, value),
+          ),
+        )
         .limit(1);
 
       if (avRow.length > 0) {
@@ -632,8 +835,13 @@ async function updateProductFromListing(
           continue;
         }
 
-        const originalName = imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
-        const processed = await processImage(imgData.buffer, originalName, imgData.mimeType);
+        const originalName =
+          imgUrl.split("/").pop()?.split("?")[0] || `image-${i}.jpg`;
+        const processed = await processImage(
+          imgData.buffer,
+          originalName,
+          imgData.mimeType,
+        );
 
         await db.insert(images).values({
           productId: p.id,
@@ -646,7 +854,9 @@ async function updateProductFromListing(
           sortOrder: i,
         });
 
-        console.log(`    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`);
+        console.log(
+          `    Image ${i + 1}/${listing.imageUrls.length}: ${originalName}`,
+        );
       } catch (err) {
         console.warn(`    Image ${i + 1} processing failed: ${err}`);
       }
@@ -665,7 +875,9 @@ async function main() {
   const limit = limitArg ? parseInt(limitArg.split("=")[1], 10) : Infinity;
   const skipUpdates = args.includes("--skip-updates");
 
-  console.log(`=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}${skipUpdates ? " (skip-updates)" : ""}\n`);
+  console.log(
+    `=== Fillaritori.com Importer ===${limit < Infinity ? ` (limit: ${limit})` : ""}${skipUpdates ? " (skip-updates)" : ""}\n`,
+  );
 
   const authorId = await ensureImporterUser();
   const attrKeyToId = await getAttributeKeyToId();
@@ -750,7 +962,11 @@ async function main() {
       if (existing) {
         // Update existing product if changed
         try {
-          const wasUpdated = await updateProductFromListing(existing, listing, attrKeyToId);
+          const wasUpdated = await updateProductFromListing(
+            existing,
+            listing,
+            attrKeyToId,
+          );
           if (wasUpdated) {
             console.log(`  UPDATED: ${listing.title}`);
             totalUpdated++;
@@ -765,8 +981,15 @@ async function main() {
       } else {
         // Insert new product
         try {
-          const productId = await insertProduct(listing, authorId, categoryId, attrKeyToId);
-          console.log(`  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`);
+          const productId = await insertProduct(
+            listing,
+            authorId,
+            categoryId,
+            attrKeyToId,
+          );
+          console.log(
+            `  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`,
+          );
           totalImported++;
         } catch (err) {
           console.error(`  FAILED to insert: ${listing.title} - ${err}`);
