@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
 import * as cheerio from "cheerio";
 import { db } from "../server/db/index";
 import {
@@ -11,101 +14,165 @@ import {
 import { eq, and } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
 import { processImage, deleteImageFiles } from "../lib/images";
+import { classifyCategory } from "../lib/classifier";
 
 // ─── Configuration ──────────────────────────────────────────────
 
 const IMPORTER_EMAIL = "importer@fillaritori.com";
 const IMPORTER_NAME = "Fillaritori Import";
 
-const CATEGORY_URLS: Array<{ url: string; categoryId: string }> = [
+interface CategoryUrlEntry {
+  url: string;
+  categoryId?: string;
+  candidateCategories?: Array<{ id: string; name: string }>;
+  forceAttributes?: Record<string, string>;
+}
+
+const CATEGORY_URLS: CategoryUrlEntry[] = [
+  // ── Static mappings ──
   {
     url: "https://www.fillaritori.com/forum/54-maantie/",
     categoryId: "maantie",
   },
   {
     url: "https://www.fillaritori.com/forum/69-triathlonaika-ajo/",
-    categoryId: "maantie",
+    categoryId: "aika-ajo-triathlon",
   },
   {
-    url: "https://www.fillaritori.com/forum/55-cyclocrossgravel/",
-    categoryId: "maantie",
+    url: "https://www.fillaritori.com/forum/99-rata/",
+    categoryId: "ratapyora",
   },
-  {
-    url: "https://www.fillaritori.com/forum/56-hybridfitness/",
-    categoryId: "maantie",
-  },
-  { url: "https://www.fillaritori.com/forum/99-rata/", categoryId: "maantie" },
   {
     url: "https://www.fillaritori.com/forum/57-joustamattomat/",
-    categoryId: "maantie",
-  },
-  {
-    url: "https://www.fillaritori.com/forum/70-fatbiket/",
-    categoryId: "maantie",
+    categoryId: "taysjaykka-maasto",
   },
   {
     url: "https://www.fillaritori.com/forum/58-etujousitetut/",
-    categoryId: "maantie",
+    categoryId: "etujousitettu-maasto",
   },
   {
     url: "https://www.fillaritori.com/forum/72-t%C3%A4ysjousitetut-80-125mm/",
-    categoryId: "maantie",
+    categoryId: "taysjousto-maasto",
   },
   {
     url: "https://www.fillaritori.com/forum/74-t%C3%A4ysjousitetut-130-155mm/",
-    categoryId: "maantie",
+    categoryId: "taysjousto-maasto",
   },
   {
     url: "https://www.fillaritori.com/forum/75-t%C3%A4ysjousitetut-160-185mm/",
-    categoryId: "maantie",
+    categoryId: "taysjousto-maasto",
   },
   {
     url: "https://www.fillaritori.com/forum/112-t%C3%A4ysjousitetut-190-210mm/",
-    categoryId: "maantie",
-  },
-  { url: "https://www.fillaritori.com/forum/5-lasten/", categoryId: "maantie" },
-  {
-    url: "https://www.fillaritori.com/forum/63-yksivaihteiset/",
-    categoryId: "maantie",
+    categoryId: "taysjousto-maasto",
   },
   {
-    url: "https://www.fillaritori.com/forum/61-napavaihteiset/",
-    categoryId: "maantie",
+    url: "https://www.fillaritori.com/forum/70-fatbiket/",
+    categoryId: "fatbike",
   },
   {
-    url: "https://www.fillaritori.com/forum/62-ketjuvaihteiset/",
-    categoryId: "maantie",
+    url: "https://www.fillaritori.com/forum/5-lasten/",
+    categoryId: "lasten-potkupyora",
   },
   {
     url: "https://www.fillaritori.com/forum/52-fiksit/",
-    categoryId: "maantie",
+    categoryId: "fiksi-sinkula",
   },
   {
-    url: "https://www.fillaritori.com/forum/60-vintageretro/",
-    categoryId: "maantie",
+    url: "https://www.fillaritori.com/forum/51-bmx/",
+    categoryId: "bmx-dirt",
   },
-  { url: "https://www.fillaritori.com/forum/51-bmx/", categoryId: "maantie" },
   {
     url: "https://www.fillaritori.com/forum/79-dirtstreet/",
-    categoryId: "maantie",
+    categoryId: "bmx-dirt",
   },
   {
     url: "https://www.fillaritori.com/forum/77-tavarapy%C3%B6r%C3%A4t/",
-    categoryId: "maantie",
+    categoryId: "tavarapyora",
   },
   {
     url: "https://www.fillaritori.com/forum/53-muille-osastoille-sopimattomat/",
-    categoryId: "maantie",
+    categoryId: "muu",
+  },
+
+  // ── AI-classified (ambiguous forums) ──
+  {
+    url: "https://www.fillaritori.com/forum/55-cyclocrossgravel/",
+    candidateCategories: [
+      { id: "cyclocross", name: "Cyclocross" },
+      { id: "gravel", name: "Gravel" },
+    ],
   },
   {
+    url: "https://www.fillaritori.com/forum/56-hybridfitness/",
+    candidateCategories: [
+      { id: "hybridi", name: "Hybridi" },
+      { id: "fitness", name: "Fitness" },
+    ],
+  },
+  {
+    url: "https://www.fillaritori.com/forum/63-yksivaihteiset/",
+    candidateCategories: [
+      { id: "fiksi-sinkula", name: "Fiksi / Sinkula" },
+      { id: "hybridi", name: "Hybridi" },
+      { id: "muu", name: "Muu" },
+    ],
+  },
+  {
+    url: "https://www.fillaritori.com/forum/61-napavaihteiset/",
+    candidateCategories: [
+      { id: "hybridi", name: "Hybridi" },
+      { id: "muu", name: "Muu" },
+    ],
+  },
+  {
+    url: "https://www.fillaritori.com/forum/62-ketjuvaihteiset/",
+    candidateCategories: [
+      { id: "hybridi", name: "Hybridi" },
+      { id: "muu", name: "Muu" },
+    ],
+  },
+  {
+    url: "https://www.fillaritori.com/forum/60-vintageretro/",
+    candidateCategories: [
+      { id: "maantie", name: "Maantie" },
+      { id: "hybridi", name: "Hybridi" },
+      { id: "fiksi-sinkula", name: "Fiksi / Sinkula" },
+      { id: "muu", name: "Muu" },
+    ],
+  },
+
+  // ── E-bike forums (AI-classified + force electric attribute) ──
+  {
     url: "https://www.fillaritori.com/forum/84-tasamaa/",
-    categoryId: "maantie",
+    candidateCategories: [
+      { id: "maantie", name: "Maantie" },
+      { id: "gravel", name: "Gravel" },
+      { id: "hybridi", name: "Hybridi" },
+      { id: "fitness", name: "Fitness" },
+      { id: "muu", name: "Muu" },
+    ],
+    forceAttributes: { electric: "Kyllä" },
   },
   {
     url: "https://www.fillaritori.com/forum/85-maasto/",
-    categoryId: "maantie",
+    candidateCategories: [
+      { id: "taysjaykka-maasto", name: "Täysjäykkä maasto" },
+      { id: "etujousitettu-maasto", name: "Etujousitettu maasto" },
+      { id: "taysjousto-maasto", name: "Täysjousto maasto" },
+      { id: "fatbike", name: "Fatbike" },
+    ],
+    forceAttributes: { electric: "Kyllä" },
   },
-  { url: "https://www.fillaritori.com/forum/86-muut/", categoryId: "maantie" },
+  {
+    url: "https://www.fillaritori.com/forum/86-muut/",
+    candidateCategories: [
+      { id: "hybridi", name: "Hybridi" },
+      { id: "tavarapyora", name: "Tavarapyörä" },
+      { id: "muu", name: "Muu" },
+    ],
+    forceAttributes: { electric: "Kyllä" },
+  },
 ];
 
 const FETCH_DELAY_MS = 1000; // be polite to the server
@@ -730,6 +797,7 @@ async function insertProduct(
 async function updateProductFromListing(
   existing: ExistingProduct,
   listing: ParsedListing,
+  categoryId: string,
   attrKeyToId: Map<string, string>,
 ): Promise<boolean> {
   const { product: p, attrs: existingAttrs, imageRows } = existing;
@@ -741,6 +809,7 @@ async function updateProductFromListing(
     description: string;
     price: number;
     location: string;
+    categoryId: string;
     updatedAt: Date;
   }> = {};
   if (p.title !== listing.title) fieldUpdates.title = listing.title;
@@ -748,6 +817,7 @@ async function updateProductFromListing(
     fieldUpdates.description = listing.description;
   if (p.price !== listing.price) fieldUpdates.price = listing.price;
   if (p.location !== listing.location) fieldUpdates.location = listing.location;
+  if (p.categoryId !== categoryId) fieldUpdates.categoryId = categoryId;
 
   if (Object.keys(fieldUpdates).length > 0) {
     fieldUpdates.updatedAt = new Date();
@@ -889,7 +959,8 @@ async function main() {
   let totalUpdated = 0;
   let totalUnchanged = 0;
 
-  for (const { url, categoryId } of CATEGORY_URLS) {
+  for (const entry of CATEGORY_URLS) {
+    const { url } = entry;
     console.log(`\nFetching category: ${url}`);
 
     let categoryHtml: string;
@@ -959,12 +1030,40 @@ async function main() {
 
       listing.sourceUrl = topic.url;
 
+      // Resolve category
+      let resolvedCategoryId: string;
+      if (entry.categoryId) {
+        resolvedCategoryId = entry.categoryId;
+      } else if (entry.candidateCategories) {
+        try {
+          resolvedCategoryId = await classifyCategory({
+            title: listing.title,
+            description: listing.description,
+            candidates: entry.candidateCategories,
+          });
+          console.log(`  AI classified category: ${resolvedCategoryId}`);
+        } catch (err) {
+          resolvedCategoryId = entry.candidateCategories[0].id;
+          console.warn(
+            `  Category classification failed, using fallback "${resolvedCategoryId}": ${err}`,
+          );
+        }
+      } else {
+        resolvedCategoryId = "muu";
+      }
+
+      // Apply forced attributes (e.g., electric: "Kyllä" for e-bike forums)
+      if (entry.forceAttributes) {
+        Object.assign(listing.attributes, entry.forceAttributes);
+      }
+
       if (existing) {
         // Update existing product if changed
         try {
           const wasUpdated = await updateProductFromListing(
             existing,
             listing,
+            resolvedCategoryId,
             attrKeyToId,
           );
           if (wasUpdated) {
@@ -984,7 +1083,7 @@ async function main() {
           const productId = await insertProduct(
             listing,
             authorId,
-            categoryId,
+            resolvedCategoryId,
             attrKeyToId,
           );
           console.log(

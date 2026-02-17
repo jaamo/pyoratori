@@ -83,3 +83,80 @@ Return a JSON object mapping attribute keys to their detected values. Only inclu
 
   return validResult;
 }
+
+interface CategoryCandidate {
+  id: string;
+  name: string;
+}
+
+interface CategoryClassifierInput {
+  title: string;
+  description: string;
+  candidates: CategoryCandidate[];
+}
+
+/**
+ * Uses OpenAI to pick the best-matching bike category from a list of candidates.
+ * Falls back to the first candidate on error.
+ */
+export async function classifyCategory(
+  input: CategoryClassifierInput
+): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+
+  const client = new OpenAI({ apiKey });
+
+  const candidateList = input.candidates
+    .map((c) => `- "${c.id}" (${c.name})`)
+    .join("\n");
+
+  const prompt = `You are a bicycle category classifier. Given a product title and description, pick the single best-matching category from the list below.
+
+RULES:
+- Return ONLY a JSON object with a single key "categoryId" whose value is one of the allowed category IDs.
+- The text is in Finnish.
+- Pick the category that best matches the type of bicycle described.
+
+CATEGORIES:
+${candidateList}
+
+PRODUCT TITLE: ${input.title}
+
+PRODUCT DESCRIPTION:
+${input.description}
+
+Return JSON: {"categoryId": "<best matching id>"}`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("Empty response from OpenAI");
+    }
+
+    const result = JSON.parse(content) as { categoryId: string };
+    const validIds = input.candidates.map((c) => c.id);
+    if (validIds.includes(result.categoryId)) {
+      return result.categoryId;
+    }
+
+    console.warn(
+      `AI returned invalid category "${result.categoryId}", falling back to "${input.candidates[0].id}"`
+    );
+    return input.candidates[0].id;
+  } catch (err) {
+    console.warn(
+      `Category classification failed: ${err}, falling back to "${input.candidates[0].id}"`
+    );
+    return input.candidates[0].id;
+  }
+}
