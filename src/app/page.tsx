@@ -125,7 +125,8 @@ export default async function HomePage() {
             </div>
             <h3 className="text-lg font-semibold">Tehokas haku</h3>
             <p className="text-muted-foreground text-sm">
-              Hakukone, joka on suunniteltu pyörien etsimiseen. Ei enää ilmoitusten kahlailua ja foorumeilla päivystämistä.
+              Hakukone, joka on suunniteltu pyörien etsimiseen. Ei enää
+              ilmoitusten kahlailua ja foorumeilla päivystämistä.
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
@@ -134,7 +135,9 @@ export default async function HomePage() {
             </div>
             <h3 className="text-lg font-semibold">Paras paikka myydä</h3>
             <p className="text-muted-foreground text-sm">
-              Jätä pyöräsi myyntiin sivustolle. Tehokas haku takaa, että pyörä löytää oikean ostajan nopeasti.
+              Takaa paras näkyvyys pyörällesi jättämällä se myyntiin suoraan
+              pyoratori.comiin. Tehokas haku takaa, että pyörä löytää oikean
+              ostajan nopeasti.
             </p>
           </div>
           <div className="text-center space-y-3 p-6">
@@ -143,7 +146,9 @@ export default async function HomePage() {
             </div>
             <h3 className="text-lg font-semibold">Kattava valikoima</h3>
             <p className="text-muted-foreground text-sm">
-              Pyoratori.com listaa uusia ja käytettyjä pyöriä myös muista kaupoista ja markkinapaikoista. Kaikki Suomen pyörät yhdessä paikassa.
+              Pyoratori.com listaa uusia ja käytettyjä pyöriä myös muista
+              kaupoista ja markkinapaikoista. Kaikki Suomen pyörät yhdessä
+              paikassa.
             </p>
           </div>
         </div>
@@ -151,65 +156,72 @@ export default async function HomePage() {
 
       {/* Latest Bikes Section */}
       <section className="bg-[#CFDBD5]">
-      <div className="container mx-auto px-4 py-16 md:py-20">
-        <h2 className="text-2xl font-bold mb-8">Uusimmat ilmoitukset</h2>
+        <div className="container mx-auto px-4 py-16 md:py-20">
+          <h2 className="text-2xl font-bold mb-8">Uusimmat ilmoitukset</h2>
 
-        {latestProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {latestProducts.map((product) => {
-              const thumbnail = product.images[0];
-              const thumbFilename = thumbnail
-                ? thumbnail.filename.replace(".webp", "-thumb.webp")
-                : null;
+          {latestProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {latestProducts.map((product) => {
+                const thumbnail = product.images[0];
+                const thumbFilename = thumbnail
+                  ? thumbnail.filename.replace(".webp", "-thumb.webp")
+                  : null;
 
-              return (
-                <Link
-                  key={product.id}
-                  href={`/ilmoitus/${product.id}`}
-                  className="rounded-2xl border p-3 transition-colors hover:bg-muted/50"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
-                    {thumbFilename ? (
-                      <Image
-                        src={`/api/uploads/${thumbFilename}`}
-                        alt={product.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                        Ei kuvaa
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <h3 className="font-medium line-clamp-2">{product.title}</h3>
-                    <p className="text-lg font-bold mt-1">
-                      {(product.price / 100).toLocaleString("fi-FI", {
-                        style: "currency",
-                        currency: "EUR",
-                      })}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <MapPin className="h-3 w-3" />
-                      {product.location}
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/ilmoitus/${product.id}`}
+                    className="rounded-2xl border p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+                      {thumbFilename ? (
+                        <Image
+                          src={`/api/uploads/${thumbFilename}`}
+                          alt={product.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                          Ei kuvaa
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">Ei vielä ilmoituksia.</p>
-        )}
+                    <div className="mt-3">
+                      <h3 className="font-medium line-clamp-2">
+                        {product.title}
+                      </h3>
+                      <p className="text-lg font-bold mt-1">
+                        {(product.price / 100).toLocaleString("fi-FI", {
+                          style: "currency",
+                          currency: "EUR",
+                        })}
+                      </p>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <MapPin className="h-3 w-3" />
+                        {product.location}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Ei vielä ilmoituksia.</p>
+          )}
 
-        <div className="mt-8 text-center">
-          <Button asChild variant="outline" size="lg" className="rounded-full px-8">
-            <Link href="/haku">Selaa kaikkia ilmoituksia</Link>
-          </Button>
+          <div className="mt-8 text-center">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8"
+            >
+              <Link href="/haku">Selaa kaikkia ilmoituksia</Link>
+            </Button>
+          </div>
         </div>
-      </div>
       </section>
     </div>
   );
