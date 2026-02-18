@@ -21,8 +21,6 @@ services:
     container_name: next
     build:
       context: .
-      args:
-        DATABASE_URL: postgresql://pyoratori:${POSTGRES_PASSWORD:-changeme}@db:5432/pyoratori
     restart: unless-stopped
     expose:
       - "3000"
