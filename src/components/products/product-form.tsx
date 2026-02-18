@@ -61,7 +61,19 @@ export function ProductForm({ product }: ProductFormProps) {
 
   function handleCategoryChange(value: string) {
     setCategoryId(value);
-    setAttributes({});
+    // Set defaults for select attributes: "Muu" for general selects, "Ei" for e-bike
+    const attrs = getAttributesForCategory(value);
+    const defaults: Record<string, string | number | boolean> = {};
+    for (const attr of attrs) {
+      if (attr.type === "select" && attr.options) {
+        if (attr.key === "electric") {
+          defaults[attr.key] = "Ei";
+        } else if (!attr.required && attr.options.includes("Muu")) {
+          defaults[attr.key] = "Muu";
+        }
+      }
+    }
+    setAttributes(defaults);
   }
 
   function handleAttributeChange(
@@ -326,6 +338,14 @@ export function ProductForm({ product }: ProductFormProps) {
               rows={6}
               maxLength={5000}
             />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              {description.length > 0 && description.length < 10 ? (
+                <span className="text-destructive">Kuvauksen on oltava vähintään 10 merkkiä</span>
+              ) : (
+                <span />
+              )}
+              <span>{description.length} / 5000</span>
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

@@ -28,6 +28,9 @@ export function DynamicAttributes({
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium">Tarkemmat tiedot</h3>
+      <p className="text-sm text-muted-foreground">
+        Vain kunto on pakollinen tieto. Mitä tarkemmat tiedot annat, sitä todennäköisemmin saat pyöräsi kaupaksi.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         {attributes.map((attr) => (
           <div key={attr.key} className="space-y-2">

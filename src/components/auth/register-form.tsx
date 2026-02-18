@@ -52,13 +52,13 @@ export function RegisterForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="name">Nimi</Label>
+        <Label htmlFor="name">Nimimerkki</Label>
         <Input
           id="name"
           name="name"
           required
-          placeholder="Matti Meikäläinen"
-          autoComplete="name"
+          placeholder="Pyöräilijä123"
+          autoComplete="nickname"
         />
       </div>
 

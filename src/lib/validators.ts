@@ -7,7 +7,7 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
-    name: z.string().min(2, "Nimi on liian lyhyt").max(100, "Nimi on liian pitkä"),
+    name: z.string().min(2, "Nimimerkki on liian lyhyt").max(100, "Nimimerkki on liian pitkä"),
     email: z.string().email("Virheellinen sähköpostiosoite"),
     password: z
       .string()
