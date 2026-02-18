@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { FilterPanel } from "./filter-panel";
 import { SearchResults } from "./search-results";
 import { SearchBar } from "./search-bar";
@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ProductWithImages } from "@/types";
+
+const STORAGE_KEY = "pyoratori-search-filters";
 
 const SORT_OPTIONS = [
   { value: "automatic", label: "Automaattinen" },
@@ -41,6 +43,34 @@ export function HomeContent({
   initialFilters,
 }: HomeContentProps) {
   const router = useRouter();
+  const restoredRef = useRef(false);
+
+  // Restore filters from localStorage on first load with empty URL
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const hasParams =
+      initialQuery ||
+      initialCategoryId ||
+      initialPage > 1 ||
+      (initialSort && initialSort !== "automatic") ||
+      Object.keys(initialFilters).length > 0;
+
+    if (hasParams) return;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, string>;
+      if (Object.keys(saved).length === 0) return;
+
+      const params = new URLSearchParams(saved);
+      router.replace(`/haku?${params.toString()}`, { scroll: false });
+    } catch {
+      // ignore invalid data
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateUrl = useCallback(
     (updates: Record<string, string | null>) => {
@@ -70,6 +100,19 @@ export function HomeContent({
       // Reset page on filter changes unless explicitly set
       if (!("sivu" in updates)) {
         params.delete("sivu");
+      }
+
+      // Save filter-related params to localStorage
+      const toSave: Record<string, string> = {};
+      for (const [key, value] of params.entries()) {
+        if (key !== "q" && key !== "sivu") {
+          toSave[key] = value;
+        }
+      }
+      if (Object.keys(toSave).length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
       }
 
       const qs = params.toString();
