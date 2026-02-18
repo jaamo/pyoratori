@@ -12,7 +12,8 @@
     "db:seed": "tsx src/server/db/seed.ts",
     "import:fillaritori": "tsx src/scripts/import-fillaritori.ts",
     "classify:product": "tsx src/scripts/classify-product.ts",
-    "delete:imported": "tsx src/scripts/delete-imported.ts"
+    "delete:imported": "tsx src/scripts/delete-imported.ts",
+    "alerts:check": "tsx src/scripts/check-search-alerts.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

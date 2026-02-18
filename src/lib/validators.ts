@@ -80,10 +80,11 @@ export const messageSchema = z.object({
 });
 
 export const searchAlertSchema = z.object({
-  name: z.string().min(1, "Nimi vaaditaan").max(100),
+  name: z.string().max(100).optional(),
   categoryId: z.string().optional(),
   query: z.string().optional(),
   filters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+  productIds: z.array(z.string()).optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

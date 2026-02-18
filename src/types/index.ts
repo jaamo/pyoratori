@@ -7,6 +7,7 @@ import type {
   conversations,
   messages,
   searchAlerts,
+  notifications,
 } from "@/server/db/schema";
 
 export type User = InferSelectModel<typeof users>;
@@ -16,6 +17,11 @@ export type Category = InferSelectModel<typeof categories>;
 export type Conversation = InferSelectModel<typeof conversations>;
 export type Message = InferSelectModel<typeof messages>;
 export type SearchAlert = InferSelectModel<typeof searchAlerts>;
+export type Notification = InferSelectModel<typeof notifications>;
+
+export type SearchAlertWithNotifications = SearchAlert & {
+  notifications: Notification[];
+};
 
 export type ProductWithImages = Product & {
   images: Image[];

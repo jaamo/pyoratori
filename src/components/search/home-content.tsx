@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ProductWithImages } from "@/types";
+import { SaveSearchAlertButton } from "./save-search-alert-button";
 
 const STORAGE_KEY = "pyoratori-search-filters";
 
@@ -184,13 +185,21 @@ export function HomeContent({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
       {/* Sidebar */}
-      <FilterPanel
-        categoryId={initialCategoryId}
-        filters={initialFilters}
-        onFilterChange={handleFilterChange}
-        onCategoryChange={handleCategorySelect}
-        onClearAll={handleClearAll}
-      />
+      <div className="space-y-3">
+        <FilterPanel
+          categoryId={initialCategoryId}
+          filters={initialFilters}
+          onFilterChange={handleFilterChange}
+          onCategoryChange={handleCategorySelect}
+          onClearAll={handleClearAll}
+        />
+        <SaveSearchAlertButton
+          categoryId={initialCategoryId}
+          query={initialQuery}
+          filters={initialFilters}
+          productIds={initialProducts.map((p) => p.id)}
+        />
+      </div>
 
       {/* Main content */}
       <div className="space-y-6">

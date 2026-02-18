@@ -12,15 +12,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, Plus, MessageSquare, User, LogOut, KeyRound, ShoppingBag } from "lucide-react";
+import { Menu, Plus, MessageSquare, Bell, User, LogOut, KeyRound, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { MobileNav } from "./mobile-nav";
 import { useUnreadCount } from "@/components/messages/unread-badge";
+import { useUnreadNotificationCount } from "@/components/notifications/unread-notification-badge";
+import { NotificationPopover } from "@/components/notifications/notification-popover";
 
 export function Header() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const unreadCount = useUnreadCount();
+  const { unreadCount: notificationCount, refetch: refetchNotifications } = useUnreadNotificationCount();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/10 bg-black text-white">
@@ -69,6 +72,11 @@ export function Header() {
                 </Link>
               </Button>
 
+              <NotificationPopover
+                unreadCount={notificationCount}
+                onMarkRead={refetchNotifications}
+              />
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
@@ -104,6 +112,17 @@ export function Header() {
                       {unreadCount > 0 && (
                         <span className="ml-auto text-xs text-muted-foreground">
                           {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/hakuvahdit">
+                      <Bell className="mr-2 h-4 w-4" />
+                      Hakuvahdit
+                      {notificationCount > 0 && (
+                        <span className="ml-auto text-xs text-muted-foreground">
+                          {notificationCount}
                         </span>
                       )}
                     </Link>
@@ -151,6 +170,7 @@ export function Header() {
         onClose={() => setMobileOpen(false)}
         isLoggedIn={!!session?.user}
         unreadCount={unreadCount}
+        notificationCount={notificationCount}
       />
     </header>
   );

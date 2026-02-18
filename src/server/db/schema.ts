@@ -163,7 +163,7 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
-export const searchAlerts = pgTable("searchAlerts", {
+export const searchAlerts = pgTable("search_alerts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("userId")
     .notNull()
@@ -171,9 +171,25 @@ export const searchAlerts = pgTable("searchAlerts", {
   name: text("name").notNull(),
   categoryId: text("categoryId"),
   query: text("query"),
-  filters: text("filters").notNull().default("{}"), // JSON
+  filters: text("filters").notNull().default("{}"), // JSON string
+  productIds: text("productIds").notNull().default("[]"), // JSON array of product IDs
   isActive: boolean("isActive").notNull().default(true),
-  lastNotifiedAt: timestamp("lastNotifiedAt"),
+  lastCheckedAt: timestamp("lastCheckedAt"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  searchAlertId: uuid("searchAlertId")
+    .notNull()
+    .references(() => searchAlerts.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  productIds: text("productIds").notNull().default("[]"), // JSON array of new product IDs
+  readAt: timestamp("readAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 

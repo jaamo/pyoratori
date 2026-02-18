@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, Plus, MessageSquare, User, LogOut, Home, Bike, BookOpen, KeyRound, ShoppingBag } from "lucide-react";
+import { X, Plus, MessageSquare, Bell, User, LogOut, Home, Bike, BookOpen, KeyRound, ShoppingBag } from "lucide-react";
 import { useEffect } from "react";
 
 type MobileNavProps = {
@@ -12,6 +12,7 @@ type MobileNavProps = {
   onClose: () => void;
   isLoggedIn: boolean;
   unreadCount: number;
+  notificationCount: number;
 };
 
 export function MobileNav({
@@ -19,6 +20,7 @@ export function MobileNav({
   onClose,
   isLoggedIn,
   unreadCount,
+  notificationCount,
 }: MobileNavProps) {
   useEffect(() => {
     if (open) {
@@ -91,6 +93,19 @@ export function MobileNav({
                 {unreadCount > 0 && (
                   <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs text-white">
                     {unreadCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/hakuvahdit"
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                onClick={onClose}
+              >
+                <Bell className="h-4 w-4" />
+                Hakuvahdit
+                {notificationCount > 0 && (
+                  <span className="ml-auto rounded-full bg-destructive px-2 py-0.5 text-xs text-white">
+                    {notificationCount}
                   </span>
                 )}
               </Link>
