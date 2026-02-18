@@ -31,6 +31,7 @@ import { getAttributesForCategory } from "@/lib/categories";
 import { PRODUCT_STATUS } from "@/lib/constants";
 import type { ProductWithDetails } from "@/types";
 import { useRouter } from "next/navigation";
+import { getCityByPostalCode } from "@/lib/postal-codes";
 
 type ProductDetailProps = {
   product: ProductWithDetails;
@@ -147,7 +148,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
-              {product.location}
+              {getCityByPostalCode(product.location) || product.location}
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />

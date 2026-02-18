@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import type { ProductWithImages } from "@/types";
 import { PRODUCT_STATUS } from "@/lib/constants";
+import { getCityByPostalCode } from "@/lib/postal-codes";
 
 type ProductCardProps = {
   product: ProductWithImages;
@@ -61,7 +62,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </p>
           <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {product.location}
+            {getCityByPostalCode(product.location) || product.location}
           </div>
         </CardContent>
       </Card>

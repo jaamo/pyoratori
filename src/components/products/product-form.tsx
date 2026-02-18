@@ -16,6 +16,7 @@ import { createProduct, updateProduct } from "@/server/actions/products";
 import type { ProductWithImages } from "@/types";
 import { Check } from "lucide-react";
 import Image from "next/image";
+import { getCityByPostalCode } from "@/lib/postal-codes";
 
 type UploadedImage = {
   id: string;
@@ -386,6 +387,12 @@ export function ProductForm({ product }: ProductFormProps) {
               {location.length > 0 && location.length < 5 && (
                 <p className="text-xs text-destructive">Postinumero on 5 numeroa</p>
               )}
+              {location.length === 5 && getCityByPostalCode(location) && (
+                <p className="text-xs text-muted-foreground">{getCityByPostalCode(location)}</p>
+              )}
+              {location.length === 5 && !getCityByPostalCode(location) && (
+                <p className="text-xs text-destructive">Tuntematon postinumero</p>
+              )}
             </div>
           </div>
 
@@ -448,7 +455,7 @@ export function ProductForm({ product }: ProductFormProps) {
                 </div>
                 <div>
                   <dt className="text-sm text-muted-foreground">Postinumero</dt>
-                  <dd>{location}</dd>
+                  <dd>{location} {getCityByPostalCode(location)}</dd>
                 </div>
               </div>
               {images.length > 0 && (

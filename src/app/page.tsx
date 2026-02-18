@@ -3,6 +3,7 @@ import Image from "next/image";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLatestProducts } from "@/server/queries/products";
+import { getCityByPostalCode } from "@/lib/postal-codes";
 
 export default async function HomePage() {
   const latestProducts = await getLatestProducts(4);
@@ -205,7 +206,7 @@ export default async function HomePage() {
                       </p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <MapPin className="h-3 w-3" />
-                        {product.location}
+                        {getCityByPostalCode(product.location) || product.location}
                       </div>
                     </div>
                   </Link>
