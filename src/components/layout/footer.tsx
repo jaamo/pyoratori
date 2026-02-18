@@ -17,9 +17,6 @@ export function Footer() {
             <Link href="/" className="inline-block">
               <Image src="/logo.svg" alt="pyoratori.com" width={260} height={42} />
             </Link>
-            <p className="mt-1 text-sm text-white/70">
-              Polkupyörien kirpputori
-            </p>
           </div>
           <div className="flex gap-6 text-sm text-white/70">
             <Link href="/" className="hover:text-white">
