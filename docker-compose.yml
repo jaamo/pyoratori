@@ -1,0 +1,60 @@
+services:
+  caddy:
+    container_name: caddy
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    depends_on:
+      next:
+        condition: service_started
+
+  next:
+    container_name: next
+    build:
+      context: .
+      args:
+        DATABASE_URL: postgresql://pyoratori:${POSTGRES_PASSWORD:-changeme}@db:5432/pyoratori
+    restart: unless-stopped
+    expose:
+      - "3000"
+    volumes:
+      - uploads:/app/uploads
+    environment:
+      - DATABASE_URL=postgresql://pyoratori:${POSTGRES_PASSWORD:-changeme}@db:5432/pyoratori
+      - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      - AUTH_URL=${AUTH_URL:-https://localhost}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=pyoratori
+      - POSTGRES_USER=pyoratori
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pyoratori -d pyoratori"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:

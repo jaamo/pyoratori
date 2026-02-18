@@ -5,11 +5,9 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    host: "localhost",
-    port: 5432,
-    user: "jaamo",
-    password: "postgres",
-    database: "pyoratori",
+    url:
+      process.env.DATABASE_URL ||
+      "postgresql://jaamo:postgres@localhost:5432/pyoratori",
     ssl: false,
   },
 });

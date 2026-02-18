@@ -3,7 +3,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
 const pool = new Pool({
-  connectionString: "postgresql://jaamo:postgres@localhost:5432/pyoratori",
+  connectionString:
+    process.env.DATABASE_URL ||
+    "postgresql://jaamo:postgres@localhost:5432/pyoratori",
   ssl: false,
 });
 
