@@ -54,7 +54,7 @@ export default async function HakuPage({
           initialQuery={query || ""}
           initialCategoryId={categoryId || null}
           initialPage={page}
-          initialSort={sort || "newest"}
+          initialSort={sort || "automatic"}
           initialFilters={{
             ...(minPrice !== undefined ? { minPrice: String(minPrice) } : {}),
             ...(maxPrice !== undefined ? { maxPrice: String(maxPrice) } : {}),

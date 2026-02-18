@@ -15,6 +15,7 @@ import {
 import type { ProductWithImages } from "@/types";
 
 const SORT_OPTIONS = [
+  { value: "automatic", label: "Automaattinen" },
   { value: "newest", label: "Uusimmat" },
   { value: "price_asc", label: "Hinta: halvin ensin" },
   { value: "price_desc", label: "Hinta: kallein ensin" },
@@ -116,7 +117,7 @@ export function HomeContent({
 
   function handleSortChange(sort: string) {
     updateUrl({
-      jarjestys: sort === "newest" ? null : sort,
+      jarjestys: sort === "automatic" ? null : sort,
     });
   }
 

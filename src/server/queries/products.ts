@@ -144,23 +144,30 @@ export async function searchProducts(
   const page = filters.page || 1;
   const offset = (page - 1) * ITEMS_PER_PAGE;
 
-  let orderByClause;
+  let orderByClauses;
   switch (filters.sort) {
     case "price_asc":
-      orderByClause = asc(products.price);
+      orderByClauses = [asc(products.price)];
       break;
     case "price_desc":
-      orderByClause = desc(products.price);
+      orderByClauses = [desc(products.price)];
+      break;
+    case "newest":
+      orderByClauses = [desc(products.createdAt)];
       break;
     default:
-      orderByClause = desc(products.createdAt);
+      // "automatic": internal products first, then newest
+      orderByClauses = [
+        sql`CASE WHEN ${products.externalUrl} IS NULL THEN 0 ELSE 1 END`,
+        desc(products.createdAt),
+      ];
   }
 
   const results = await db
     .select()
     .from(products)
     .where(where)
-    .orderBy(orderByClause)
+    .orderBy(...orderByClauses)
     .limit(ITEMS_PER_PAGE)
     .offset(offset);
 
