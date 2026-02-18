@@ -200,7 +200,10 @@ export async function getLatestProducts(
         gte(products.expiresAt, new Date())
       )
     )
-    .orderBy(desc(products.createdAt))
+    .orderBy(
+      sql`CASE WHEN ${products.externalUrl} IS NULL THEN 0 ELSE 1 END`,
+      desc(products.createdAt),
+    )
     .limit(limit);
 
   const productIds = results.map((p) => p.id);

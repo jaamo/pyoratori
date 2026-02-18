@@ -187,6 +187,11 @@ export default async function HomePage() {
                           Ei kuvaa
                         </div>
                       )}
+                      {product.externalUrl && (
+                        <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                          Fillaritori
+                        </span>
+                      )}
                     </div>
                     <div className="mt-3">
                       <h3 className="font-medium line-clamp-2">
