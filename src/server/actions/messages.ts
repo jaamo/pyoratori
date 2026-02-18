@@ -147,6 +147,5 @@ export async function markAsRead(conversationId: string) {
     }
   }
 
-  revalidatePath("/viestit");
   return { success: true };
 }

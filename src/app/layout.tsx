@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/sonner";
+import { auth } from "@/lib/auth";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -17,17 +18,19 @@ export const metadata: Metadata = {
     "Osta ja myy polkupyöriä, osia ja varusteita. Suomen suurin pyöräkirpputori.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="fi">
       <body
         className={`${spaceGrotesk.variable} antialiased`}
       >
-        <Providers>
+        <Providers session={session}>
           <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-1">{children}</main>
