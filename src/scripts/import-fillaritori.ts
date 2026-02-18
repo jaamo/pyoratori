@@ -11,7 +11,7 @@ import {
   attributeValues,
   images,
 } from "../server/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { PRODUCT_EXPIRY_DAYS } from "../lib/constants";
 import { processImage, deleteImageFiles } from "../lib/images";
 import { classifyCategory } from "../lib/classifier";
@@ -939,6 +939,14 @@ async function updateProductFromListing(
 
 // ─── Main ───────────────────────────────────────────────────────
 
+interface UrlToProcess {
+  url: string;
+  title?: string;
+  tag?: string;
+  categoryEntry?: CategoryUrlEntry;
+  existingCategoryId?: string;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const limitArg = args.find((a) => a.startsWith("--limit="));
@@ -959,9 +967,15 @@ async function main() {
   let totalUpdated = 0;
   let totalUnchanged = 0;
 
+  // ── Phase 1: Crawl all category pages and collect URLs ──
+
+  console.log("── Phase 1: Crawling category pages ──\n");
+
+  const urlMap = new Map<string, UrlToProcess>();
+
   for (const entry of CATEGORY_URLS) {
     const { url } = entry;
-    console.log(`\nFetching category: ${url}`);
+    console.log(`Fetching category: ${url}`);
 
     let categoryHtml: string;
     try {
@@ -975,125 +989,179 @@ async function main() {
     console.log(`  Found ${topics.length} topics`);
 
     for (const topic of topics) {
-      if (totalImported >= limit) break;
+      if (!urlMap.has(topic.url)) {
+        urlMap.set(topic.url, {
+          url: topic.url,
+          title: topic.title,
+          tag: topic.tag,
+          categoryEntry: entry,
+        });
+      }
+    }
 
-      // Filter by listing tag
-      if (topic.tag === "Myyty") {
-        // Check if this sold listing exists in our DB and mark it as sold
-        if (await productExistsByExternalUrl(topic.url)) {
-          const updated = await markProductAsSoldByExternalUrl(topic.url);
-          if (updated) {
-            console.log(`  MARKED SOLD: ${topic.title}`);
-            totalMarkedSold++;
-          }
-        } else {
-          console.log(`  SKIP (sold, not in DB): ${topic.title}`);
-          totalSkipped++;
+    await sleep(FETCH_DELAY_MS);
+  }
+
+  console.log(`\nCrawled ${urlMap.size} unique URLs from category pages`);
+
+  // ── Phase 2: Add public DB products to the list ──
+
+  console.log("\n── Phase 2: Adding existing DB products ──\n");
+
+  const dbProducts = await db
+    .select({
+      externalUrl: products.externalUrl,
+      categoryId: products.categoryId,
+      title: products.title,
+    })
+    .from(products)
+    .where(
+      and(eq(products.status, "public"), isNotNull(products.externalUrl)),
+    );
+
+  let dbAdded = 0;
+  for (const row of dbProducts) {
+    if (row.externalUrl && !urlMap.has(row.externalUrl)) {
+      urlMap.set(row.externalUrl, {
+        url: row.externalUrl,
+        title: row.title,
+        existingCategoryId: row.categoryId,
+      });
+      dbAdded++;
+    }
+  }
+
+  console.log(
+    `Found ${dbProducts.length} public products in DB, added ${dbAdded} URLs not found in category pages`,
+  );
+  console.log(`Total URLs to process: ${urlMap.size}`);
+
+  // ── Phase 3: Process each URL ──
+
+  console.log("\n── Phase 3: Processing listings ──\n");
+
+  for (const [url, entry] of Array.from(urlMap.entries())) {
+    if (totalImported >= limit) break;
+
+    // Handle "Myyty" (sold) tag from category page crawl
+    if (entry.tag === "Myyty") {
+      if (await productExistsByExternalUrl(url)) {
+        const updated = await markProductAsSoldByExternalUrl(url);
+        if (updated) {
+          console.log(`  MARKED SOLD: ${entry.title}`);
+          totalMarkedSold++;
         }
-        continue;
-      }
-
-      if (topic.tag !== "Myydään" && topic.tag !== "") {
-        console.log(`  SKIP (tag: ${topic.tag}): ${topic.title}`);
+      } else {
+        console.log(`  SKIP (sold, not in DB): ${entry.title}`);
         totalSkipped++;
-        continue;
       }
+      continue;
+    }
 
-      // Check if product already exists
-      const existing = await getProductByExternalUrl(topic.url);
+    // Skip non-sale tags from category page crawl
+    if (entry.tag && entry.tag !== "Myydään" && entry.tag !== "") {
+      console.log(`  SKIP (tag: ${entry.tag}): ${entry.title}`);
+      totalSkipped++;
+      continue;
+    }
 
-      if (existing && skipUpdates) {
-        console.log(`  SKIP (exists, updates disabled): ${topic.title}`);
-        totalSkipped++;
-        continue;
-      }
+    // Check if product already exists
+    const existing = await getProductByExternalUrl(url);
 
-      // Fetch topic page
-      await sleep(FETCH_DELAY_MS);
+    if (existing && skipUpdates) {
+      console.log(`  SKIP (exists, updates disabled): ${entry.title}`);
+      totalSkipped++;
+      continue;
+    }
 
-      let topicHtml: string;
+    // Fetch topic page
+    await sleep(FETCH_DELAY_MS);
+
+    let topicHtml: string;
+    try {
+      topicHtml = await fetchPage(url);
+    } catch (err) {
+      console.error(`  Failed to fetch topic: ${url} - ${err}`);
+      totalFailed++;
+      continue;
+    }
+
+    // Parse listing
+    const displayTitle = entry.title || url;
+    const listing = parseFirstPost(topicHtml, displayTitle);
+    if (!listing) {
+      console.warn(`  SKIP (parse failed): ${displayTitle}`);
+      totalFailed++;
+      continue;
+    }
+
+    listing.sourceUrl = url;
+
+    // Resolve category: use crawled category data, or fall back to existing DB category
+    let resolvedCategoryId: string;
+    if (entry.categoryEntry?.categoryId) {
+      resolvedCategoryId = entry.categoryEntry.categoryId;
+    } else if (entry.categoryEntry?.candidateCategories) {
       try {
-        topicHtml = await fetchPage(topic.url);
+        resolvedCategoryId = await classifyCategory({
+          title: listing.title,
+          description: listing.description,
+          candidates: entry.categoryEntry.candidateCategories,
+        });
+        console.log(`  AI classified category: ${resolvedCategoryId}`);
       } catch (err) {
-        console.error(`  Failed to fetch topic: ${topic.url} - ${err}`);
+        resolvedCategoryId = entry.categoryEntry.candidateCategories[0].id;
+        console.warn(
+          `  Category classification failed, using fallback "${resolvedCategoryId}": ${err}`,
+        );
+      }
+    } else if (entry.existingCategoryId) {
+      resolvedCategoryId = entry.existingCategoryId;
+    } else {
+      resolvedCategoryId = "muu";
+    }
+
+    // Apply forced attributes (e.g., electric: "Kyllä" for e-bike forums)
+    if (entry.categoryEntry?.forceAttributes) {
+      Object.assign(listing.attributes, entry.categoryEntry.forceAttributes);
+    }
+
+    if (existing) {
+      // Update existing product if changed
+      try {
+        const wasUpdated = await updateProductFromListing(
+          existing,
+          listing,
+          resolvedCategoryId,
+          attrKeyToId,
+        );
+        if (wasUpdated) {
+          console.log(`  UPDATED: ${listing.title}`);
+          totalUpdated++;
+        } else {
+          console.log(`  UNCHANGED: ${listing.title}`);
+          totalUnchanged++;
+        }
+      } catch (err) {
+        console.error(`  FAILED to update: ${listing.title} - ${err}`);
         totalFailed++;
-        continue;
       }
-
-      // Parse listing
-      const listing = parseFirstPost(topicHtml, topic.title);
-      if (!listing) {
-        console.warn(`  SKIP (parse failed): ${topic.title}`);
+    } else {
+      // Insert new product
+      try {
+        const productId = await insertProduct(
+          listing,
+          authorId,
+          resolvedCategoryId,
+          attrKeyToId,
+        );
+        console.log(
+          `  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`,
+        );
+        totalImported++;
+      } catch (err) {
+        console.error(`  FAILED to insert: ${listing.title} - ${err}`);
         totalFailed++;
-        continue;
-      }
-
-      listing.sourceUrl = topic.url;
-
-      // Resolve category
-      let resolvedCategoryId: string;
-      if (entry.categoryId) {
-        resolvedCategoryId = entry.categoryId;
-      } else if (entry.candidateCategories) {
-        try {
-          resolvedCategoryId = await classifyCategory({
-            title: listing.title,
-            description: listing.description,
-            candidates: entry.candidateCategories,
-          });
-          console.log(`  AI classified category: ${resolvedCategoryId}`);
-        } catch (err) {
-          resolvedCategoryId = entry.candidateCategories[0].id;
-          console.warn(
-            `  Category classification failed, using fallback "${resolvedCategoryId}": ${err}`,
-          );
-        }
-      } else {
-        resolvedCategoryId = "muu";
-      }
-
-      // Apply forced attributes (e.g., electric: "Kyllä" for e-bike forums)
-      if (entry.forceAttributes) {
-        Object.assign(listing.attributes, entry.forceAttributes);
-      }
-
-      if (existing) {
-        // Update existing product if changed
-        try {
-          const wasUpdated = await updateProductFromListing(
-            existing,
-            listing,
-            resolvedCategoryId,
-            attrKeyToId,
-          );
-          if (wasUpdated) {
-            console.log(`  UPDATED: ${listing.title}`);
-            totalUpdated++;
-          } else {
-            console.log(`  UNCHANGED: ${listing.title}`);
-            totalUnchanged++;
-          }
-        } catch (err) {
-          console.error(`  FAILED to update: ${listing.title} - ${err}`);
-          totalFailed++;
-        }
-      } else {
-        // Insert new product
-        try {
-          const productId = await insertProduct(
-            listing,
-            authorId,
-            resolvedCategoryId,
-            attrKeyToId,
-          );
-          console.log(
-            `  IMPORTED: ${listing.title} (${listing.price / 100}€, ${listing.imageUrls.length} images) → ${productId}`,
-          );
-          totalImported++;
-        } catch (err) {
-          console.error(`  FAILED to insert: ${listing.title} - ${err}`);
-          totalFailed++;
-        }
       }
     }
   }
