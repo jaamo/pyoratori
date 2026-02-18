@@ -60,20 +60,23 @@ export function ProductForm({ product }: ProductFormProps) {
   const categoryAttributes = getAttributesForCategory(categoryId);
 
   function handleCategoryChange(value: string) {
+    const changed = value !== categoryId;
     setCategoryId(value);
-    // Set defaults for select attributes: "Muu" for general selects, "Ei" for e-bike
-    const attrs = getAttributesForCategory(value);
-    const defaults: Record<string, string | number | boolean> = {};
-    for (const attr of attrs) {
-      if (attr.type === "select" && attr.options) {
-        if (attr.key === "electric") {
-          defaults[attr.key] = "Ei";
-        } else if (!attr.required && attr.options.includes("Muu")) {
-          defaults[attr.key] = "Muu";
+    if (changed) {
+      // Set defaults for select attributes: "Muu" for general selects, "Ei" for e-bike
+      const attrs = getAttributesForCategory(value);
+      const defaults: Record<string, string | number | boolean> = {};
+      for (const attr of attrs) {
+        if (attr.type === "select" && attr.options) {
+          if (attr.key === "electric") {
+            defaults[attr.key] = "Ei";
+          } else if (!attr.required && attr.options.includes("Muu")) {
+            defaults[attr.key] = "Muu";
+          }
         }
       }
+      setAttributes(defaults);
     }
-    setAttributes(defaults);
   }
 
   function handleAttributeChange(
