@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, MapPin } from "lucide-react";
 import { sendMessage } from "@/server/actions/messages";
 import { MessageBubble } from "./message-bubble";
+import { getCityByPostalCode } from "@/lib/postal-codes";
 import type { ConversationWithDetails, MessageWithSender } from "@/types";
 
 type ChatViewProps = {
@@ -86,23 +88,52 @@ export function ChatView({
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b pb-4">
-        <Button asChild variant="ghost" size="icon">
-          <Link href="/viestit">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
+      <div className="border-b pb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Button asChild variant="ghost" size="icon">
+            <Link href="/viestit">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
           <p className="font-medium">
             {conversation.otherUser.name || "Tuntematon"}
           </p>
-          <Link
-            href={`/ilmoitus/${conversation.product.id}`}
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            {conversation.product.title}
-          </Link>
         </div>
+        <Link
+          href={`/ilmoitus/${conversation.product.id}`}
+          className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+        >
+          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+            {conversation.productImage ? (
+              <Image
+                src={`/api/uploads/${conversation.productImage}`}
+                alt={conversation.product.title}
+                fill
+                className="object-cover"
+                sizes="64px"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                Ei kuvaa
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col justify-center min-w-0">
+            <p className="text-sm font-medium leading-tight line-clamp-1">
+              {conversation.product.title}
+            </p>
+            <p className="text-sm font-bold">
+              {(conversation.product.price / 100).toLocaleString("fi-FI", {
+                style: "currency",
+                currency: "EUR",
+              })}
+            </p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {getCityByPostalCode(conversation.product.location) || conversation.product.location}
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Messages */}

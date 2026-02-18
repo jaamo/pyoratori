@@ -28,7 +28,8 @@ export type ProductWithDetails = ProductWithImages & {
 };
 
 export type ConversationWithDetails = Conversation & {
-  product: Pick<Product, "id" | "title">;
+  product: Pick<Product, "id" | "title" | "price" | "location">;
+  productImage: string | null;
   otherUser: Pick<User, "id" | "name">;
   lastMessage: Pick<Message, "content" | "createdAt" | "senderId"> | null;
   unreadCount: number;
@@ -39,7 +40,8 @@ export type MessageWithSender = Message & {
 };
 
 export type ProductThread = {
-  product: Pick<Product, "id" | "title">;
+  product: Pick<Product, "id" | "title" | "price" | "location">;
+  productImage: string | null;
   conversations: ConversationWithDetails[];
   totalUnread: number;
   latestMessageAt: Date | null;

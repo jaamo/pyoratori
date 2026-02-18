@@ -4,6 +4,7 @@ import {
   messages,
   products,
   users,
+  images,
 } from "@/server/db/schema";
 import { eq, and, or, desc, ne, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -25,7 +26,13 @@ export async function getInbox(
   for (const convo of convos) {
     const product = await db.query.products.findFirst({
       where: eq(products.id, convo.productId),
-      columns: { id: true, title: true },
+      columns: { id: true, title: true, price: true, location: true },
+    });
+
+    const firstImage = await db.query.images.findFirst({
+      where: eq(images.productId, convo.productId),
+      orderBy: [images.sortOrder],
+      columns: { filename: true },
     });
 
     const otherUserId =
@@ -57,6 +64,9 @@ export async function getInbox(
       result.push({
         ...convo,
         product,
+        productImage: firstImage
+          ? firstImage.filename.replace(".webp", "-thumb.webp")
+          : null,
         otherUser,
         lastMessage: lastMessage || null,
         unreadCount: unreadResult[0]?.count || 0,
@@ -86,7 +96,13 @@ export async function getConversation(
 
   const product = await db.query.products.findFirst({
     where: eq(products.id, convo.productId),
-    columns: { id: true, title: true },
+    columns: { id: true, title: true, price: true, location: true },
+  });
+
+  const firstImage = await db.query.images.findFirst({
+    where: eq(images.productId, convo.productId),
+    orderBy: [images.sortOrder],
+    columns: { filename: true },
   });
 
   const otherUserId =
@@ -117,6 +133,9 @@ export async function getConversation(
     conversation: {
       ...convo,
       product,
+      productImage: firstImage
+        ? firstImage.filename.replace(".webp", "-thumb.webp")
+        : null,
       otherUser,
       lastMessage: null,
       unreadCount: 0,
@@ -174,6 +193,7 @@ export async function getInboxGroupedByProduct(
     } else {
       grouped.set(key, {
         product: convo.product,
+        productImage: convo.productImage,
         conversations: [convo],
         totalUnread: convo.unreadCount,
         latestMessageAt: convo.lastMessage?.createdAt
