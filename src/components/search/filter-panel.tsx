@@ -260,7 +260,7 @@ export function FilterPanel({
 
       {/* Dynamic attribute filters - each individually collapsible */}
       {filterableAttributes.map((attr) => (
-        <CollapsibleFilter key={attr.key} label={attr.label}>
+        <CollapsibleFilter key={attr.key} label={attr.label} defaultOpen={!!filters[`attr_${attr.key}`]}>
           {attr.type === "select" && attr.options ? (
             <CheckboxFilterGroup
               label={attr.label}
