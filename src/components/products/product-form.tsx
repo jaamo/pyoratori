@@ -118,8 +118,8 @@ export function ProductForm({ product }: ProductFormProps) {
           setStepError("Hinta on pakollinen.");
           return false;
         }
-        if (!location.trim()) {
-          setStepError("Sijainti on pakollinen.");
+        if (!/^\d{5}$/.test(location)) {
+          setStepError("Syötä kelvollinen postinumero (5 numeroa).");
           return false;
         }
         return true;
@@ -369,15 +369,23 @@ export function ProductForm({ product }: ProductFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Sijainti</Label>
+              <Label htmlFor="location">Postinumero</Label>
               <Input
                 id="location"
                 name="location"
                 required
+                inputMode="numeric"
+                maxLength={5}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Esim. Helsinki"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+                  setLocation(val);
+                }}
+                placeholder="Esim. 00100"
               />
+              {location.length > 0 && location.length < 5 && (
+                <p className="text-xs text-destructive">Postinumero on 5 numeroa</p>
+              )}
             </div>
           </div>
 
@@ -439,7 +447,7 @@ export function ProductForm({ product }: ProductFormProps) {
                   <dd>{price} &euro;</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted-foreground">Sijainti</dt>
+                  <dt className="text-sm text-muted-foreground">Postinumero</dt>
                   <dd>{location}</dd>
                 </div>
               </div>

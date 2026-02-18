@@ -66,8 +66,7 @@ export const productSchema = z.object({
     .max(999999, "Hinta on liian suuri"),
   location: z
     .string()
-    .min(2, "Sijainti vaaditaan")
-    .max(100, "Sijainti on liian pitkä"),
+    .regex(/^\d{5}$/, "Syötä kelvollinen postinumero (5 numeroa)"),
   categoryId: z.string().min(1, "Kategoria vaaditaan"),
   attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   imageIds: z.array(z.string()),

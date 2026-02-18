@@ -215,12 +215,17 @@ export function FilterPanel({
       </CollapsibleFilter>
 
       {/* Sijainti */}
-      <CollapsibleFilter label="Sijainti" defaultOpen>
+      <CollapsibleFilter label="Postinumero" defaultOpen>
         <Input
           className="text-sm"
+          inputMode="numeric"
+          maxLength={5}
           value={filters.location || ""}
-          onChange={(e) => handleChange("location", e.target.value)}
-          placeholder="Esim. Helsinki"
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+            handleChange("location", val);
+          }}
+          placeholder="Esim. 00100"
         />
       </CollapsibleFilter>
 
