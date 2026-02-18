@@ -27,7 +27,11 @@ services:
     volumes:
       - uploads:/app/uploads
     environment:
-      - DATABASE_URL=postgresql://pyoratori:${POSTGRES_PASSWORD:-changeme}@db:5432/pyoratori
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=pyoratori
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - DB_NAME=pyoratori
       - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET in .env}
       - AUTH_URL=${AUTH_URL:-https://localhost}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
