@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, Plus, MessageSquare, User, LogOut } from "lucide-react";
+import { Menu, Plus, MessageSquare, User, LogOut, KeyRound, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { MobileNav } from "./mobile-nav";
 
@@ -93,8 +93,8 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/profiili">
-                      <User className="mr-2 h-4 w-4" />
-                      Profiili
+                      <ShoppingBag className="mr-2 h-4 w-4" />
+                      Omat tuotteet
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -106,6 +106,12 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
                           {unreadCount}
                         </span>
                       )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/vaihda-salasana">
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      Vaihda salasana
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

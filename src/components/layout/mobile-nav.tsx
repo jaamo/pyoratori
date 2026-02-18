@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { X, Plus, MessageSquare, User, LogOut, Home, Bike, BookOpen } from "lucide-react";
+import { X, Plus, MessageSquare, User, LogOut, Home, Bike, BookOpen, KeyRound, ShoppingBag } from "lucide-react";
 import { useEffect } from "react";
 
 type MobileNavProps = {
@@ -99,8 +99,16 @@ export function MobileNav({
                 className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
                 onClick={onClose}
               >
-                <User className="h-4 w-4" />
-                Profiili
+                <ShoppingBag className="h-4 w-4" />
+                Omat tuotteet
+              </Link>
+              <Link
+                href="/vaihda-salasana"
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+                onClick={onClose}
+              >
+                <KeyRound className="h-4 w-4" />
+                Vaihda salasana
               </Link>
 
               <Separator className="my-2" />

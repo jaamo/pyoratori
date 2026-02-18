@@ -1,10 +1,11 @@
 "use server";
 
-import { hash } from "bcryptjs";
+import { hash, compare } from "bcryptjs";
 import { db } from "@/server/db";
 import { users, passwordResetTokens } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { registerSchema, passwordResetRequestSchema, passwordResetSchema } from "@/lib/validators";
+import { registerSchema, passwordResetRequestSchema, passwordResetSchema, changePasswordSchema } from "@/lib/validators";
+import { auth } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
 import { writeFileSync } from "fs";
 import { join } from "path";
@@ -119,6 +120,46 @@ export async function resetPassword(formData: FormData) {
     .update(passwordResetTokens)
     .set({ usedAt: new Date() })
     .where(eq(passwordResetTokens.id, resetToken.id));
+
+  return { success: true };
+}
+
+export async function changePassword(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Et ole kirjautunut sisään" };
+  }
+
+  const raw = {
+    currentPassword: formData.get("currentPassword") as string,
+    password: formData.get("password") as string,
+    confirmPassword: formData.get("confirmPassword") as string,
+  };
+
+  const result = changePasswordSchema.safeParse(raw);
+  if (!result.success) {
+    return { error: result.error.issues[0].message };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
+  if (!user?.passwordHash) {
+    return { error: "Käyttäjää ei löytynyt" };
+  }
+
+  const isValid = await compare(result.data.currentPassword, user.passwordHash);
+  if (!isValid) {
+    return { error: "Nykyinen salasana on virheellinen" };
+  }
+
+  const passwordHash = await hash(result.data.password, 12);
+
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, session.user.id));
 
   return { success: true };
 }

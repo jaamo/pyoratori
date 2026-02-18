@@ -37,6 +37,20 @@ export const passwordResetSchema = z
     path: ["confirmPassword"],
   });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Nykyinen salasana vaaditaan"),
+    password: z
+      .string()
+      .min(8, "Salasanan on oltava vähintään 8 merkkiä")
+      .max(100, "Salasana on liian pitkä"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Salasanat eivät täsmää",
+    path: ["confirmPassword"],
+  });
+
 export const productSchema = z.object({
   title: z
     .string()
@@ -77,6 +91,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type PasswordResetRequestInput = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type MessageInput = z.infer<typeof messageSchema>;
 export type SearchAlertInput = z.infer<typeof searchAlertSchema>;
