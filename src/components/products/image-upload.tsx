@@ -24,6 +24,7 @@ export function ImageUpload({
   maxImages = 10,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -31,6 +32,7 @@ export function ImageUpload({
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setError("");
 
     for (const file of Array.from(files)) {
       if (images.length >= maxImages) break;
@@ -38,16 +40,25 @@ export function ImageUpload({
       const formData = new FormData();
       formData.set("file", file);
 
-      const result = await uploadImage(formData);
-      if (result.image) {
-        onChange([
-          ...images,
-          {
-            id: result.image.id,
-            filename: result.image.filename,
-            originalName: result.image.originalName,
-          },
-        ]);
+      try {
+        const result = await uploadImage(formData);
+        if (result.error) {
+          setError(result.error);
+          break;
+        }
+        if (result.image) {
+          onChange([
+            ...images,
+            {
+              id: result.image.id,
+              filename: result.image.filename,
+              originalName: result.image.originalName,
+            },
+          ]);
+        }
+      } catch {
+        setError("Kuvan lataaminen epäonnistui. Tarkista tiedoston koko (max 10 MB).");
+        break;
       }
     }
 
@@ -111,6 +122,9 @@ export function ImageUpload({
           </label>
         )}
       </div>
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
       <p className="text-xs text-muted-foreground">
         Enintään {maxImages} kuvaa. JPEG, PNG tai WebP, max 10 MB / kuva.
       </p>
