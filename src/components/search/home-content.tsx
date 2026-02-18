@@ -158,6 +158,19 @@ export function HomeContent({
     updateUrl(updates);
   }
 
+  function handleClearAll() {
+    const updates: Record<string, string | null> = { kategoria: null };
+
+    for (const key of Object.keys(initialFilters)) {
+      if (key === "minPrice") updates.minHinta = null;
+      else if (key === "maxPrice") updates.maxHinta = null;
+      else if (key === "location") updates.sijainti = null;
+      else updates[key] = null;
+    }
+
+    updateUrl(updates);
+  }
+
   function handleSortChange(sort: string) {
     updateUrl({
       jarjestys: sort === "automatic" ? null : sort,
@@ -176,6 +189,7 @@ export function HomeContent({
         filters={initialFilters}
         onFilterChange={handleFilterChange}
         onCategoryChange={handleCategorySelect}
+        onClearAll={handleClearAll}
       />
 
       {/* Main content */}

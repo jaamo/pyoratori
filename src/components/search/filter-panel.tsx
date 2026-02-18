@@ -19,6 +19,7 @@ type FilterPanelProps = {
   filters: Record<string, string>;
   onFilterChange: (filters: Record<string, string>) => void;
   onCategoryChange: (categoryId: string | null) => void;
+  onClearAll: () => void;
 };
 
 function CollapsibleFilter({
@@ -142,6 +143,7 @@ export function FilterPanel({
   filters,
   onFilterChange,
   onCategoryChange,
+  onClearAll,
 }: FilterPanelProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -163,8 +165,7 @@ export function FilterPanel({
   }
 
   function clearFilters() {
-    onFilterChange({});
-    onCategoryChange(null);
+    onClearAll();
   }
 
   const hasActiveFilters =
