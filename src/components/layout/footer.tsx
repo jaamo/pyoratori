@@ -15,7 +15,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div>
             <Link href="/" className="inline-block">
-              <Image src="/logo.svg" alt="pyoratori.com" width={140} height={20} />
+              <Image src="/logo.svg" alt="pyoratori.com" width={260} height={42} />
             </Link>
             <p className="mt-1 text-sm text-white/70">
               Polkupyörien kirpputori

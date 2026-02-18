@@ -22,9 +22,9 @@ export function Header({ unreadCount = 0 }: { unreadCount?: number }) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/10 bg-black text-white">
-      <div className="container mx-auto flex h-16 items-center px-6">
+      <div className="container mx-auto flex h-20 items-center px-6">
         <Link href="/" className="mr-6 flex items-center">
-          <Image src="/logo.svg" alt="pyoratori.com" width={160} height={22} priority className="brightness-0 invert" />
+          <Image src="/logo.svg" alt="pyoratori.com" width={260} height={42} priority />
         </Link>
 
         <nav className="hidden md:flex md:flex-1 md:items-center md:gap-6">
