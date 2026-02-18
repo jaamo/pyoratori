@@ -133,9 +133,17 @@ export async function searchProducts(
   if (filters.attributes) {
     for (const [key, value] of Object.entries(filters.attributes)) {
       if (value !== undefined && value !== "" && value !== null) {
-        conditions.push(
-          sql`EXISTS (SELECT 1 FROM product_attributes INNER JOIN attributes ON product_attributes.attribute_id = attributes.id LEFT JOIN attribute_values ON product_attributes.attribute_value_id = attribute_values.id WHERE product_attributes.product_id = ${products.id} AND attributes.key = ${key} AND COALESCE(attribute_values.value, product_attributes.value) = ${String(value)})`
-        );
+        const strValue = String(value);
+        const values = strValue.includes(",") ? strValue.split(",") : [strValue];
+        if (values.length === 1) {
+          conditions.push(
+            sql`EXISTS (SELECT 1 FROM product_attributes INNER JOIN attributes ON product_attributes.attribute_id = attributes.id LEFT JOIN attribute_values ON product_attributes.attribute_value_id = attribute_values.id WHERE product_attributes.product_id = ${products.id} AND attributes.key = ${key} AND COALESCE(attribute_values.value, product_attributes.value) = ${values[0]})`
+          );
+        } else {
+          conditions.push(
+            sql`EXISTS (SELECT 1 FROM product_attributes INNER JOIN attributes ON product_attributes.attribute_id = attributes.id LEFT JOIN attribute_values ON product_attributes.attribute_value_id = attribute_values.id WHERE product_attributes.product_id = ${products.id} AND attributes.key = ${key} AND COALESCE(attribute_values.value, product_attributes.value) IN (${sql.join(values.map((v) => sql`${v}`), sql`, `)}))`
+          );
+        }
       }
     }
   }

@@ -36,6 +36,7 @@ const bikeBrandAttr: AttributeDefinition = {
     "Orbea", "SCOTT", "Simplon", "Specialized", "Trek", "Wilier", "Muu",
   ],
   filterable: true,
+  searchable: true,
 };
 
 const gearsAttr: AttributeDefinition = {

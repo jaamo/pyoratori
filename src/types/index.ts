@@ -55,6 +55,7 @@ export type AttributeDefinition = {
   type: AttributeType;
   options?: string[];
   filterable?: boolean;
+  searchable?: boolean;
   required?: boolean;
   unit?: string;
   min?: number;

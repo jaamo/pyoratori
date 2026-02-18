@@ -3,6 +3,13 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getAttributesForCategory, categoryGroups } from "@/lib/categories";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
@@ -50,15 +57,21 @@ function CheckboxFilterGroup({
   selectedValue,
   onChange,
   showSearch = false,
+  multiSelect = false,
 }: {
   label: string;
   options: { value: string; label: string }[];
   selectedValue: string;
   onChange: (value: string) => void;
   showSearch?: boolean;
+  multiSelect?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
+
+  const selectedValues = multiSelect && selectedValue
+    ? selectedValue.split(",")
+    : [];
 
   const filteredOptions = search
     ? options.filter((o) =>
@@ -88,9 +101,18 @@ function CheckboxFilterGroup({
             className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted"
           >
             <Checkbox
-              checked={selectedValue === opt.value}
+              checked={multiSelect
+                ? selectedValues.includes(opt.value)
+                : selectedValue === opt.value}
               onCheckedChange={(checked) => {
-                onChange(checked ? opt.value : "");
+                if (multiSelect) {
+                  const next = checked
+                    ? [...selectedValues, opt.value]
+                    : selectedValues.filter((v) => v !== opt.value);
+                  onChange(next.join(","));
+                } else {
+                  onChange(checked ? opt.value : "");
+                }
               }}
             />
             <span>{opt.label}</span>
@@ -180,18 +202,25 @@ export function FilterPanel({
       </div>
 
       {/* Kategoria */}
-      <CollapsibleFilter label="Kategoria" defaultOpen>
-        <CheckboxFilterGroup
-          label="Kategoria"
-          options={allCategories.map((cat) => ({
-            value: cat.id,
-            label: cat.name,
-          }))}
-          selectedValue={categoryId || ""}
-          onChange={(value) => onCategoryChange(value || null)}
-          showSearch={allCategories.length > 5}
-        />
-      </CollapsibleFilter>
+      <div>
+        <span className="text-sm font-semibold">Kategoria</span>
+        <Select
+          value={categoryId || "all"}
+          onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
+        >
+          <SelectTrigger className="mt-2 w-full text-sm">
+            <SelectValue placeholder="Kaikki kategoriat" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Kaikki kategoriat</SelectItem>
+            {allCategories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Hinta */}
       <CollapsibleFilter label="Hinta" defaultOpen>
@@ -243,7 +272,8 @@ export function FilterPanel({
               onChange={(value) =>
                 handleChange(`attr_${attr.key}`, value)
               }
-              showSearch={attr.options.length > 5}
+              showSearch={!!attr.searchable}
+              multiSelect
             />
           ) : (
             <Input
