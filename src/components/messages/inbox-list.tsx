@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";
-import type { ConversationWithDetails } from "@/types";
+import type { ProductThread } from "@/types";
 
 type InboxListProps = {
-  conversations: ConversationWithDetails[];
+  threads: ProductThread[];
   currentUserId: string;
 };
 
-export function InboxList({ conversations, currentUserId }: InboxListProps) {
-  if (conversations.length === 0) {
+export function InboxList({ threads, currentUserId }: InboxListProps) {
+  if (threads.length === 0) {
     return (
       <div className="py-12 text-center">
         <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -21,45 +21,29 @@ export function InboxList({ conversations, currentUserId }: InboxListProps) {
     );
   }
 
+  const rows = threads.flatMap((thread) =>
+    thread.conversations.map((convo) => ({ convo, product: thread.product }))
+  );
+
   return (
     <div className="divide-y rounded-lg border">
-      {conversations.map((convo) => (
+      {rows.map(({ convo, product }) => (
         <Link
           key={convo.id}
           href={`/viestit/${convo.id}`}
-          className="flex items-center gap-3 p-4 transition-colors hover:bg-accent"
+          className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent"
         >
-          <div className="flex-1 overflow-hidden">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">
-                {convo.otherUser.name || "Tuntematon"}
-              </span>
-              {convo.unreadCount > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {convo.unreadCount}
-                </Badge>
-              )}
-            </div>
-            <p className="truncate text-sm text-muted-foreground">
-              {convo.product.title}
-            </p>
-            {convo.lastMessage && (
-              <p className="mt-0.5 truncate text-sm">
-                {convo.lastMessage.senderId === currentUserId && (
-                  <span className="text-muted-foreground">Sinä: </span>
-                )}
-                {convo.lastMessage.content}
-              </p>
+          <span className="truncate font-medium">{product.title}</span>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {convo.unreadCount > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {convo.unreadCount}
+              </Badge>
             )}
-          </div>
-          {convo.lastMessage && (
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {new Date(convo.lastMessage.createdAt).toLocaleDateString(
-                "fi-FI",
-                { day: "numeric", month: "numeric" }
-              )}
+            <span className="text-sm text-muted-foreground">
+              {convo.otherUser.name || "Tuntematon"}
             </span>
-          )}
+          </div>
         </Link>
       ))}
     </div>

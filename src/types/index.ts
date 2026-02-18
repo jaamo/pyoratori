@@ -38,6 +38,13 @@ export type MessageWithSender = Message & {
   sender: Pick<User, "id" | "name">;
 };
 
+export type ProductThread = {
+  product: Pick<Product, "id" | "title">;
+  conversations: ConversationWithDetails[];
+  totalUnread: number;
+  latestMessageAt: Date | null;
+};
+
 export type AttributeType = "select" | "number" | "text" | "boolean";
 
 export type AttributeDefinition = {

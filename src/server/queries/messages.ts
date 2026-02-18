@@ -7,7 +7,7 @@ import {
 } from "@/server/db/schema";
 import { eq, and, or, desc, ne, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import type { ConversationWithDetails, MessageWithSender } from "@/types";
+import type { ConversationWithDetails, MessageWithSender, ProductThread } from "@/types";
 
 export async function getInbox(
   userId: string
@@ -149,4 +149,45 @@ export async function getUnreadCount(userId: string): Promise<number> {
   }
 
   return total;
+}
+
+export async function getInboxGroupedByProduct(
+  userId: string
+): Promise<ProductThread[]> {
+  const allConversations = await getInbox(userId);
+
+  const grouped = new Map<string, ProductThread>();
+
+  for (const convo of allConversations) {
+    const key = convo.product.id;
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.conversations.push(convo);
+      existing.totalUnread += convo.unreadCount;
+      const msgDate = convo.lastMessage?.createdAt
+        ? new Date(convo.lastMessage.createdAt)
+        : null;
+      if (msgDate && (!existing.latestMessageAt || msgDate > existing.latestMessageAt)) {
+        existing.latestMessageAt = msgDate;
+      }
+    } else {
+      grouped.set(key, {
+        product: convo.product,
+        conversations: [convo],
+        totalUnread: convo.unreadCount,
+        latestMessageAt: convo.lastMessage?.createdAt
+          ? new Date(convo.lastMessage.createdAt)
+          : null,
+      });
+    }
+  }
+
+  // Sort threads by latest message date, newest first
+  return Array.from(grouped.values()).sort((a, b) => {
+    if (!a.latestMessageAt && !b.latestMessageAt) return 0;
+    if (!a.latestMessageAt) return 1;
+    if (!b.latestMessageAt) return -1;
+    return b.latestMessageAt.getTime() - a.latestMessageAt.getTime();
+  });
 }
