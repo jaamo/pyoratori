@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getProductById } from "@/server/queries/products";
 import { ProductDetail } from "@/components/products/product-detail";
 
@@ -12,6 +12,10 @@ export default async function ProductPage({
 
   if (!product) {
     notFound();
+  }
+
+  if (product.externalUrl) {
+    redirect(product.externalUrl);
   }
 
   return <ProductDetail product={product} />;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin } from "lucide-react";
+import { MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLatestProducts } from "@/server/queries/products";
 import { getCityByPostalCode } from "@/lib/postal-codes";
@@ -168,10 +168,17 @@ export default async function HomePage() {
                   ? thumbnail.filename.replace(".webp", "-thumb.webp")
                   : null;
 
+                const isExternal = !!product.externalUrl;
+                const href = isExternal ? product.externalUrl! : `/ilmoitus/${product.id}`;
+                const linkProps = isExternal
+                  ? { target: "_blank" as const, rel: "noopener noreferrer" }
+                  : {};
+
                 return (
                   <Link
                     key={product.id}
-                    href={`/ilmoitus/${product.id}`}
+                    href={href}
+                    {...linkProps}
                     className="rounded-2xl border p-3 transition-colors hover:bg-muted/50"
                   >
                     <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
@@ -189,8 +196,9 @@ export default async function HomePage() {
                         </div>
                       )}
                       {product.externalUrl && (
-                        <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                        <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground inline-flex items-center gap-1">
                           Fillaritori
+                          <ExternalLink className="h-3 w-3" />
                         </span>
                       )}
                     </div>

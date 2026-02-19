@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, ExternalLink } from "lucide-react";
 import type { ProductWithImages } from "@/types";
 import { PRODUCT_STATUS } from "@/lib/constants";
 import { getCityByPostalCode } from "@/lib/postal-codes";
@@ -17,8 +17,14 @@ export function ProductCard({ product }: ProductCardProps) {
     ? thumbnail.filename.replace(".webp", "-thumb.webp")
     : null;
 
+  const isExternal = !!product.externalUrl;
+  const href = isExternal ? product.externalUrl! : `/ilmoitus/${product.id}`;
+  const linkProps = isExternal
+    ? { target: "_blank" as const, rel: "noopener noreferrer" }
+    : {};
+
   return (
-    <Link href={`/ilmoitus/${product.id}`}>
+    <Link href={href} {...linkProps}>
       <Card className="group overflow-hidden rounded-2xl border py-0 gap-0 shadow-none transition-colors hover:bg-muted/50">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {thumbFilename ? (
@@ -45,8 +51,9 @@ export function ProductCard({ product }: ProductCardProps) {
             </Badge>
           )}
           {product.externalUrl && (
-            <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1">
               Fillaritori
+              <ExternalLink className="h-3 w-3" />
             </Badge>
           )}
         </div>
