@@ -63,7 +63,7 @@ export function Header() {
                 </Link>
               </Button>
 
-              <Button asChild variant="ghost" size="icon" className="relative text-white hover:bg-white/10 hover:text-white">
+              <Button asChild variant="ghost" size="icon" className="relative hidden md:inline-flex text-white hover:bg-white/10 hover:text-white">
                 <Link href="/viestit">
                   <MessageSquare className="h-5 w-5" />
                   {unreadCount > 0 && (
@@ -72,14 +72,16 @@ export function Header() {
                 </Link>
               </Button>
 
-              <NotificationPopover
-                unreadCount={notificationCount}
-                onMarkRead={refetchNotifications}
-              />
+              <div className="hidden md:block">
+                <NotificationPopover
+                  unreadCount={notificationCount}
+                  onMarkRead={refetchNotifications}
+                />
+              </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
+                  <Button variant="ghost" size="icon" className="hidden md:inline-flex text-white hover:bg-white/10 hover:text-white">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-white/20 text-white">
                         {session.user.name
