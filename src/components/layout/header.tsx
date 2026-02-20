@@ -147,10 +147,10 @@ export function Header() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
+              <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex text-white hover:bg-white/10 hover:text-white">
                 <Link href="/kirjaudu">Kirjaudu</Link>
               </Button>
-              <Button asChild size="sm" className="bg-white text-black hover:bg-white/90">
+              <Button asChild size="sm" className="hidden md:inline-flex bg-white text-black hover:bg-white/90">
                 <Link href="/rekisteroidy">Rekisteröidy</Link>
               </Button>
             </>
@@ -158,11 +158,10 @@ export function Header() {
 
           <Button
             variant="ghost"
-            size="icon"
-            className="md:hidden text-white hover:bg-white/10 hover:text-white"
+            className="md:hidden h-14 w-14 p-0 text-white hover:bg-white/10 hover:text-white"
             onClick={() => setMobileOpen(true)}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-12 w-12" />
           </Button>
         </div>
       </div>
