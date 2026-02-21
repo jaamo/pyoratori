@@ -49,10 +49,10 @@ export default async function HomePage() {
           {/* Center content */}
           <div className="relative z-10 text-center space-y-6 max-w-xl mx-auto">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Löydä uusi pyöräsi
+              Käytetyt polkupyörät
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-md mx-auto">
-              Pyoratori.com Suomen kattavin pyörien hakukone ja kauppapaikka
+              Suomen kattavin käytettyjen pyörien hakukone ja kauppapaikka
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
@@ -137,7 +137,7 @@ export default async function HomePage() {
             <h3 className="text-lg font-semibold">Paras paikka myydä</h3>
             <p className="text-muted-foreground text-sm">
               Takaa paras näkyvyys pyörällesi jättämällä se myyntiin suoraan
-              pyoratori.comiin. Tehokas haku takaa, että pyörä löytää oikean
+              pyoratori.comiin. Näin se löytyy parhaiten ja pyörä löytää oikean
               ostajan nopeasti.
             </p>
           </div>
@@ -147,9 +147,8 @@ export default async function HomePage() {
             </div>
             <h3 className="text-lg font-semibold">Kattava valikoima</h3>
             <p className="text-muted-foreground text-sm">
-              Pyoratori.com listaa uusia ja käytettyjä pyöriä myös muista
-              kaupoista ja markkinapaikoista. Kaikki Suomen pyörät yhdessä
-              paikassa.
+              Pyoratori.com listaa käytettyjä pyöriä myös muista kaupoista ja
+              markkinapaikoista. Laaja valikoima yhdellä haulla.
             </p>
           </div>
         </div>
@@ -169,7 +168,9 @@ export default async function HomePage() {
                   : null;
 
                 const isExternal = !!product.externalUrl;
-                const href = isExternal ? product.externalUrl! : `/ilmoitus/${product.id}`;
+                const href = isExternal
+                  ? product.externalUrl!
+                  : `/ilmoitus/${product.id}`;
                 const linkProps = isExternal
                   ? { target: "_blank" as const, rel: "noopener noreferrer" }
                   : {};
@@ -214,7 +215,8 @@ export default async function HomePage() {
                       </p>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <MapPin className="h-3 w-3" />
-                        {getCityByPostalCode(product.location) || product.location}
+                        {getCityByPostalCode(product.location) ||
+                          product.location}
                       </div>
                     </div>
                   </Link>
@@ -233,6 +235,56 @@ export default async function HomePage() {
               className="rounded-full px-8"
             >
               <Link href="/haku">Selaa kaikkia ilmoituksia</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Tietopankki Article Highlights */}
+      <section className="container mx-auto px-4 py-16 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+          <div>
+            <p className="text-sm font-semibold tracking-widest text-muted-foreground uppercase mb-2">
+              Tietopankki
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              Näin ostat käytetyn pyörän
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Käytetyn pyörän ostaminen on järkihomma, mutta kaupassa piilee
+              riskejä. Tämä opas auttaa välttämään sudenkuopat.
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8"
+            >
+              <Link href="/tietopankki/nain-ostat-kaytetyn-pyoran">
+                Lue lisää
+              </Link>
+            </Button>
+          </div>
+          <div>
+            <p className="text-sm font-semibold tracking-widest text-muted-foreground uppercase mb-2">
+              Tietopankki
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              Miten tunnistan varastetun pyörän
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Suomessa varastetaan kymmeniätuhansia pyöriä vuosittain. Näin
+              tunnistat varastetun pyörän ja vältät kalliit seuraukset.
+            </p>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="rounded-full px-8"
+            >
+              <Link href="/tietopankki/miten-tunnistan-varastetun-pyoran">
+                Lue lisää
+              </Link>
             </Button>
           </div>
         </div>
