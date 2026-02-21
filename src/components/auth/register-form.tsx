@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +8,9 @@ import { register } from "@/server/actions/auth";
 import Link from "next/link";
 
 export function RegisterForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,19 +26,26 @@ export function RegisterForm() {
       return;
     }
 
-    // Auto-login after registration
-    const signInResult = await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
-      redirect: false,
-    });
+    setSuccess(true);
+    setLoading(false);
+  }
 
-    if (signInResult?.error) {
-      router.push("/kirjaudu");
-    } else {
-      router.push("/");
-      router.refresh();
-    }
+  if (success) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="rounded-md bg-green-50 p-4 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+          <p className="font-medium">Tili luotu!</p>
+          <p className="mt-1">
+            Tarkista sähköpostisi ja klikkaa aktivointilinkkiä ennen kirjautumista.
+          </p>
+        </div>
+        <Link href="/kirjaudu">
+          <Button variant="outline" className="w-full">
+            Siirry kirjautumissivulle
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   return (

@@ -2,13 +2,12 @@
 
 import { hash, compare } from "bcryptjs";
 import { db } from "@/server/db";
-import { users, passwordResetTokens } from "@/server/db/schema";
+import { users, passwordResetTokens, verificationTokens } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { registerSchema, passwordResetRequestSchema, passwordResetSchema, changePasswordSchema } from "@/lib/validators";
 import { auth } from "@/lib/auth";
 import { v4 as uuid } from "uuid";
-import { writeFileSync } from "fs";
-import { join } from "path";
+import { sendActivationEmail, sendPasswordResetEmail } from "@/server/mail";
 
 export async function register(formData: FormData) {
   const raw = {
@@ -24,24 +23,48 @@ export async function register(formData: FormData) {
   }
 
   const { name, email, password } = result.data;
+  const passwordHash = await hash(password, 12);
 
   const existing = await db.query.users.findFirst({
     where: eq(users.email, email),
   });
 
   if (existing) {
-    return { error: "Sähköpostiosoite on jo käytössä" };
+    if (existing.emailVerified) {
+      return { error: "Sähköpostiosoite on jo käytössä" };
+    }
+
+    // Re-registration with unverified email: update details and reissue token
+    await db
+      .update(users)
+      .set({ name, passwordHash })
+      .where(eq(users.id, existing.id));
+
+    // Delete old activation tokens
+    await db
+      .delete(verificationTokens)
+      .where(eq(verificationTokens.identifier, email));
+  } else {
+    await db.insert(users).values({
+      name,
+      email,
+      passwordHash,
+    });
   }
 
-  const passwordHash = await hash(password, 12);
+  // Generate activation token (24h expiry)
+  const token = uuid();
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
-  await db.insert(users).values({
-    name,
-    email,
-    passwordHash,
+  await db.insert(verificationTokens).values({
+    identifier: email,
+    token,
+    expires,
   });
 
-  return { success: true };
+  await sendActivationEmail(email, name, token);
+
+  return { success: true, needsActivation: true };
 }
 
 export async function requestPasswordReset(formData: FormData) {
@@ -58,8 +81,6 @@ export async function requestPasswordReset(formData: FormData) {
 
   // Always return success to prevent email enumeration
   if (!user) {
-    const logPath = join(process.cwd(), "data/password-reset.log");
-    writeFileSync(logPath, `[${new Date().toISOString()}] No user found for: ${result.data.email}\n`, { flag: "a" });
     return { success: true };
   }
 
@@ -72,11 +93,7 @@ export async function requestPasswordReset(formData: FormData) {
     expires,
   });
 
-  // V1: Log reset link to file (email integration later)
-  const resetUrl = `http://localhost:3000/unohtunut-salasana?token=${token}`;
-  const logLine = `[${new Date().toISOString()}] ${user.email}: ${resetUrl}\n`;
-  const logPath = join(process.cwd(), "data/password-reset.log");
-  writeFileSync(logPath, logLine, { flag: "a" });
+  await sendPasswordResetEmail(user.email, user.name || "", token);
 
   return { success: true };
 }
@@ -120,6 +137,107 @@ export async function resetPassword(formData: FormData) {
     .update(passwordResetTokens)
     .set({ usedAt: new Date() })
     .where(eq(passwordResetTokens.id, resetToken.id));
+
+  return { success: true };
+}
+
+export async function checkLoginEligibility(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  if (!email || !password) {
+    return { error: "INVALID_CREDENTIALS" as const };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  if (!user || !user.passwordHash) {
+    return { error: "INVALID_CREDENTIALS" as const };
+  }
+
+  const isValid = await compare(password, user.passwordHash);
+  if (!isValid) {
+    return { error: "INVALID_CREDENTIALS" as const };
+  }
+
+  if (!user.emailVerified) {
+    return { error: "NOT_ACTIVATED" as const };
+  }
+
+  return { ok: true };
+}
+
+export async function activateAccount(token: string) {
+  if (!token) {
+    return { error: "Virheellinen aktivointilinkki" };
+  }
+
+  const record = await db.query.verificationTokens.findFirst({
+    where: eq(verificationTokens.token, token),
+  });
+
+  if (!record) {
+    return { error: "Virheellinen aktivointilinkki" };
+  }
+
+  if (record.expires < new Date()) {
+    return { error: "Aktivointilinkki on vanhentunut. Pyydä uusi linkki kirjautumissivulta." };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, record.identifier),
+  });
+
+  if (!user) {
+    return { error: "Käyttäjää ei löytynyt" };
+  }
+
+  await db
+    .update(users)
+    .set({ emailVerified: new Date() })
+    .where(eq(users.id, user.id));
+
+  await db
+    .delete(verificationTokens)
+    .where(eq(verificationTokens.identifier, record.identifier));
+
+  return { success: true };
+}
+
+export async function resendActivation(formData: FormData) {
+  const email = formData.get("email") as string;
+
+  if (!email) {
+    return { success: true };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email),
+  });
+
+  // Always return success to prevent email enumeration
+  if (!user || user.emailVerified) {
+    return { success: true };
+  }
+
+  // Delete old activation tokens
+  await db
+    .delete(verificationTokens)
+    .where(eq(verificationTokens.identifier, email));
+
+  // Generate new token (24h expiry)
+  const token = uuid();
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+  await db.insert(verificationTokens).values({
+    identifier: email,
+    token,
+    expires,
+  });
+
+  await sendActivationEmail(email, user.name || "", token);
 
   return { success: true };
 }
