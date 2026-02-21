@@ -8,3 +8,4 @@ uploads
 docker-compose*.yml
 Caddyfile
 Dockerfile
+!cron/

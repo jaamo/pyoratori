@@ -21,6 +21,7 @@ services:
     container_name: next
     build:
       context: .
+      target: runner
     restart: unless-stopped
     expose:
       - "3000"
@@ -35,6 +36,9 @@ services:
       - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET in .env}
       - AUTH_URL=${AUTH_URL:-https://localhost}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - MJ_APIKEY_PUBLIC=${MJ_APIKEY_PUBLIC:-}
+      - MJ_APIKEY_PRIVATE=${MJ_APIKEY_PRIVATE:-}
+      - MJ_FROM_EMAIL=${MJ_FROM_EMAIL:-noreply@pyoratori.com}
     depends_on:
       db:
         condition: service_healthy
@@ -55,8 +59,28 @@ services:
       timeout: 5s
       retries: 5
 
+  cron:
+    container_name: cron
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=pyoratori
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - DB_NAME=pyoratori
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - cronlogs:/var/log/cron
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
   uploads:
   caddy_data:
   caddy_config:
+  cronlogs:

@@ -1,0 +1,3 @@
+0 3 * * * /app/cron/run-script.sh import:fillaritori >> /var/log/cron/import-fillaritori.log 2>&1
+0 4 * * * /app/cron/run-script.sh classify:product >> /var/log/cron/classify-product.log 2>&1
+0 * * * * /app/cron/run-script.sh alerts:check >> /var/log/cron/alerts-check.log 2>&1

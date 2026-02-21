@@ -38,3 +38,29 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
+
+# Worker stage for cron jobs
+FROM base AS worker
+WORKDIR /app
+
+# Copy dependencies and source
+COPY --from=deps /app/node_modules ./node_modules
+COPY src/scripts ./src/scripts
+COPY src/server ./src/server
+COPY src/lib ./src/lib
+COPY src/types ./src/types
+COPY tsconfig.json drizzle.config.ts package.json ./
+
+# Create log directory
+RUN mkdir -p /var/log/cron
+
+# Copy cron files
+COPY cron/crontab /etc/crontabs/root
+COPY cron/run-script.sh /app/cron/run-script.sh
+RUN chmod +x /app/cron/run-script.sh
+
+# Entrypoint dumps env vars then starts crond
+COPY cron/entrypoint.sh /app/cron/entrypoint.sh
+RUN chmod +x /app/cron/entrypoint.sh
+
+ENTRYPOINT ["/app/cron/entrypoint.sh"]

@@ -1,16 +1,17 @@
 import Mailjet from "node-mailjet";
 
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC!,
-  process.env.MJ_APIKEY_PRIVATE!,
-);
+function getMailjetClient() {
+  return Mailjet.apiConnect(
+    process.env.MJ_APIKEY_PUBLIC!,
+    process.env.MJ_APIKEY_PRIVATE!,
+  );
+}
 
-const FROM_EMAIL = process.env.MJ_FROM_EMAIL || "no-reply@pyoratori.com";
 const FROM_NAME = "Pyörätori";
-const BASE_URL = process.env.AUTH_URL || "http://localhost:3000";
 
 async function sendEmail(to: { email: string; name: string }, subject: string, textPart: string, htmlPart: string) {
-  await mailjet
+  const FROM_EMAIL = process.env.MJ_FROM_EMAIL || "no-reply@pyoratori.com";
+  await getMailjetClient()
     .post("send", { version: "v3.1" })
     .request({
       Messages: [
@@ -26,7 +27,8 @@ async function sendEmail(to: { email: string; name: string }, subject: string, t
 }
 
 export async function sendActivationEmail(email: string, name: string, token: string) {
-  const url = `${BASE_URL}/aktivoi?token=${token}`;
+  const baseUrl = process.env.AUTH_URL || "http://localhost:3000";
+  const url = `${baseUrl}/aktivoi?token=${token}`;
 
   await sendEmail(
     { email, name },
@@ -48,7 +50,8 @@ export async function sendActivationEmail(email: string, name: string, token: st
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, token: string) {
-  const url = `${BASE_URL}/unohtunut-salasana?token=${token}`;
+  const baseUrl = process.env.AUTH_URL || "http://localhost:3000";
+  const url = `${baseUrl}/unohtunut-salasana?token=${token}`;
 
   await sendEmail(
     { email, name },
